@@ -1,4 +1,4 @@
-l<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -390,7 +390,7 @@ const michiganPublic100=[
   {rank:64,name:"Bay Harbor: Quarry/Preserve",location:"Bay Harbor, Michigan",id:"mipub64"},
   {rank:65,name:"Bay Harbor: Preserve/Links",location:"Bay Harbor, Michigan",id:"mipub65"},
   {rank:66,name:"The Lakes Golf Course at Lakewood Shores",location:"Oscoda, Michigan",id:"mipub66"},
-  {rank:67,name:"Garland Golf Resort: Fazio Premier",location:"Lewiston, Michigan",id:"mipub67"},
+  {rank:67,name:"Garland Golf Resort: Fountains",location:"Lewiston, Michigan",id:"mipub67"},
   {rank:68,name:"Garland Golf Resort: Reflections",location:"Lewiston, Michigan",id:"mipub68"},
   {rank:69,name:"Gull Lake View: Bedford Valley",location:"Augusta, Michigan",id:"mipub69"},
   {rank:70,name:"Gull Lake View: Gull Lake West",location:"Augusta, Michigan",id:"mipub70"},
@@ -605,8 +605,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T13:55:00-04:00";
-const APP_VERSION="v42";
+const APP_BUILD_UPDATED_AT="2026-09-14T14:05:00-04:00";
+const APP_VERSION="v44";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
@@ -923,95 +923,114 @@ document.getElementById("close").onclick=()=>modal.classList.remove("open");
 document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.getElementById("modalsearch").focus()};
 document.getElementById("modalsearch").oninput=renderResults;
 let remoteSearchTimer=null;
-async function searchOpenGolf(q){
-  q=q.trim(); if(q.length<2) return [];
-  const normalizeApiCourse=(c)=>{
-    const name=normalizeCourseName(c.name||c.course_name||c.title||"Unnamed Course");
-    const city=normalizeCourseName(c.city||"");
-    const state=normalizeCourseName(c.state||c.state_code||"");
-    const location=[city,state].filter(Boolean).join(", ") || normalizeCourseName(c.location||c.address||"");
-    const ranked=resolveRankedCourse(name,location,{strict:false});
-    if(ranked){
-      rememberApiMapping(c.id||c.course_id||slugId(name,location),ranked.id);
-      return ranked;
-    }
-    return mergeCourse({
-      id:String(c.id||c.course_id||slugId(name,location)),
-      name,location,country:c.country||"USA",
-      region:state.toUpperCase()==="MI"?"michigan":"usa",
-      world:null,usa:null,michigan:null,public:null,
-      logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""
-    });
-  };
-  try{
-    // First use the normal API search. This preserves access to courses outside
-    // Michigan while also allowing the ranked-course resolver to recognize them.
-    const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50`);
-    if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
+let miDirectoryPromise=null;
+const MI_CACHE_KEY="coursebook.opengolf.mi.v1";
+const MI_CACHE_TTL=6*60*60*1000;
+
+function apiCourseToRaw(c){
+  const displayName=String(c.name||c.course_name||c.title||"Unnamed Course").trim();
+  const name=normalizeCourseName(displayName);
+  const city=normalizeCourseName(c.city||"");
+  const countryRaw=c.country||c.country_name||c.countryCode||c.country_code||c.nation||"";
+  const country=normalizeCourseName(countryRaw);
+  const regionRaw=c.state||c.state_code||c.province||c.province_code||c.region||c.region_code||"";
+  const region=normalizeCourseName(regionRaw);
+  const isUS=!country || /^(us|usa|united states|united states of america)$/.test(country);
+  const state=isUS?region:"";
+  const locationParts=[city,region,countryRaw].filter(Boolean);
+  const location=locationParts.join(", ") || normalizeCourseName(c.location||c.address||"");
+  return {c,name,displayName,city,state,region,country,location,isUS};
+}
+
+function normalizeApiCourse(c, forceMichigan=false){
+  const raw=apiCourseToRaw(c);
+  const ranked=resolveRankedCourse(raw.name,raw.location,{strict:false});
+  if(ranked){
+    rememberApiMapping(c.id||c.course_id||slugId(raw.name,raw.location),ranked.id);
+    return ranked;
+  }
+  const canonicalCountry=raw.isUS?"USA":(c.country||c.country_name||c.country_code||"International");
+  return mergeCourse({
+    id:String(c.id||c.course_id||slugId(raw.name,raw.location)),
+    name:raw.displayName,location:raw.location,country:canonicalCountry,
+    region:forceMichigan||raw.state.toUpperCase()==="MI"?"michigan":(raw.isUS?"usa":"international"),
+    world:null,usa:null,michigan:null,public:null,
+    logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""
+  });
+}
+
+async function loadMichiganDirectory(){
+  if(miDirectoryPromise) return miDirectoryPromise;
+  miDirectoryPromise=(async()=>{
+    try{
+      const cached=sessionStorage.getItem(MI_CACHE_KEY);
+      if(cached){
+        const parsed=JSON.parse(cached);
+        if(parsed && parsed.savedAt && Date.now()-parsed.savedAt<MI_CACHE_TTL && Array.isArray(parsed.courses)) return parsed.courses;
+      }
+    }catch(_){ }
+    const res=await fetch(`${API_BASE}/courses/state/MI`,{cache:"no-store"});
+    if(!res.ok) throw new Error(`OpenGolfAPI Michigan ${res.status}`);
     const data=await res.json();
     const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
-    const normalized=list.map(normalizeApiCourse);
+    if(!Array.isArray(list)||!list.length) throw new Error("OpenGolfAPI Michigan directory was empty");
+    try{sessionStorage.setItem(MI_CACHE_KEY,JSON.stringify({savedAt:Date.now(),courses:list}));}catch(_){ }
+    return list;
+  })().catch(e=>{miDirectoryPromise=null;throw e});
+  return miDirectoryPromise;
+}
 
-    // OpenGolfAPI caps search results at 50. Michigan alone has 800+ courses,
-    // so a name can fall outside the generic search result set. If the generic
-    // search doesn't give us a useful Michigan result, query the complete
-    // Michigan state directory and filter it locally. This guarantees that a
-    // Michigan course in the API can be found even when it isn't in the first
-    // 50 generic search results.
-    const genericUseful=normalized.some(c=>{
-      const loc=String(c.location||"").toLowerCase();
-      return loc.includes("mi") || loc.includes("michigan") || c.michigan || c.usa || c.world || c.public;
-    });
-    if(!genericUseful){
-      try{
-        const miRes=await fetch(`${API_BASE}/courses/state/MI`);
-        if(miRes.ok){
-          const miData=await miRes.json();
-          const miList=Array.isArray(miData)?miData:(miData.courses||miData.data||miData.results||[]);
-          const nq=courseNameNorm(q);
-          const qTokens=nq.split(" ").filter(Boolean);
-          const scored=miList.map(c=>{
-            const n=courseNameNorm(c.name||c.course_name||c.title||"");
-            const city=courseNameNorm(c.city||"");
-            const loc=[city,"mi"].filter(Boolean).join(" ");
-            const tokens=n.split(" ");
-            const shared=qTokens.filter(x=>tokens.includes(x)).length;
-            const starts=n.startsWith(nq)?100:0;
-            const includes=n.includes(nq)?50:0;
-            return {c,score:starts+includes+shared*10};
-          }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,25).map(x=>normalizeApiCourse(x.c));
-          const seen=new Set(normalized.map(c=>String(c.id)));
-          for(const c of scored) if(!seen.has(String(c.id))){normalized.push(c);seen.add(String(c.id));}
-        }
-      }catch(miErr){ console.warn("OpenGolfAPI Michigan fallback failed",miErr); }
-    }
-    return normalized;
-  }catch(e){
-    console.warn("OpenGolfAPI search failed",e);
-    // If the generic search itself fails, still try the Michigan directory so
-    // Michigan logging does not silently fail because of a 50-result/search issue.
-    try{
-      const miRes=await fetch(`${API_BASE}/courses/state/MI`);
-      if(miRes.ok){
-        const miData=await miRes.json();
-        const miList=Array.isArray(miData)?miData:(miData.courses||miData.data||miData.results||[]);
-        const nq=courseNameNorm(q), qTokens=nq.split(" ").filter(Boolean);
-        return miList.map(c=>{
-          const n=courseNameNorm(c.name||c.course_name||c.title||"");
-          const shared=qTokens.filter(x=>n.split(" ").includes(x)).length;
-          return {c,score:(n===nq?100:0)+(n.includes(nq)?50:0)+shared*10};
-        }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,25).map(x=>{
-          const c=x.c; const name=normalizeCourseName(c.name||c.course_name||c.title||"");
-          const city=normalizeCourseName(c.city||"");
-          const location=[city,"MI"].filter(Boolean).join(", ");
-          const ranked=resolveRankedCourse(name,location,{strict:false});
-          if(ranked){rememberApiMapping(c.id||c.course_id||slugId(name,location),ranked.id);return ranked;}
-          return mergeCourse({id:String(c.id||c.course_id||slugId(name,location)),name,location,country:"USA",region:"michigan",world:null,usa:null,public:null,michigan:null});
-        });
-      }
-    }catch(miErr){console.warn("OpenGolfAPI Michigan fallback failed",miErr)}
-    return [];
+function rankMichiganMatches(list,q){
+  const nq=courseNameNorm(q), qTokens=nq.split(" ").filter(Boolean);
+  return list.map(c=>{
+    const raw=apiCourseToRaw(c);
+    const n=courseNameNorm(raw.name), city=courseNameNorm(raw.city);
+    const tokens=n.split(" ");
+    const shared=qTokens.filter(x=>tokens.includes(x)).length;
+    const cityShared=qTokens.filter(x=>city.split(" ").includes(x)).length;
+    const exact=n===nq;
+    const starts=n.startsWith(nq);
+    const includes=n.includes(nq);
+    const tokenAll=qTokens.length>0 && qTokens.every(t=>tokens.includes(t)||city.split(" ").includes(t));
+    let score=0;
+    if(exact) score+=1000;
+    if(starts) score+=500;
+    if(includes) score+=300;
+    if(tokenAll) score+=150;
+    score+=shared*25+cityShared*15;
+    return {c,score};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,25).map(x=>normalizeApiCourse(x.c,true));
+}
+
+async function searchOpenGolf(q){
+  q=q.trim(); if(q.length<2) return [];
+  const results=[];
+  const seen=new Set();
+  const add=(c)=>{if(!c)return;const key=String(c.id);if(seen.has(key))return;seen.add(key);results.push(c)};
+
+  // Search the live API and the complete Michigan directory independently.
+  // The old implementation only queried the Michigan directory when the
+  // generic search returned no Michigan-looking result. That was the bug:
+  // a single Michigan result in the first 50 could prevent the full directory
+  // lookup, hiding another Michigan course that was also a valid match.
+  const genericPromise=(async()=>{
+    const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50`,{cache:"no-store"});
+    if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
+    const data=await res.json();
+    return Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
+  })();
+  const miPromise=loadMichiganDirectory();
+
+  const [generic,mi]=await Promise.allSettled([genericPromise,miPromise]);
+  if(generic.status==="fulfilled") generic.value.map(c=>normalizeApiCourse(c)).forEach(add);
+  if(mi.status==="fulfilled") rankMichiganMatches(mi.value,q).forEach(add);
+
+  // If both sources failed, return nothing rather than pretending the local
+  // Top-100 catalog is the full course database.
+  if(!results.length && generic.status==="rejected" && mi.status==="rejected"){
+    console.warn("OpenGolfAPI search failed",generic.reason,mi.reason);
   }
+  return results;
 }
 function renderResults(){
   const q=document.getElementById("modalsearch").value.toLowerCase().trim(),box=document.getElementById("results");
