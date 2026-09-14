@@ -508,6 +508,9 @@ const canonicalCourseLocations=new Map([
   [norm("St. Andrews Links: Jubilee"),"St Andrews, Fife, Scotland"],
   [norm("The Glen"),"North Berwick, East Lothian, Scotland"]
 ]);
+// Normalize these known international course locations in the bundled catalog
+// itself. This happens once at startup, before any cloud/API data is touched.
+for(const c of courses){const canonical=canonicalCourseLocations.get(norm(c.name||""));if(canonical)c.location=canonical;}
 const COURSE_META_CACHE_KEY="theCourseBookCourseMetaV1";
 let courseMetaCache={};
 try{const raw=localStorage.getItem(COURSE_META_CACHE_KEY);const parsed=raw?JSON.parse(raw):{};if(parsed&&typeof parsed==="object")courseMetaCache=parsed}catch(_){ }
@@ -530,13 +533,31 @@ function cachedCourseMeta(name,location,country){
   return null;
 }
 const byName=new Map();
+const canonicalizeCourse=c=>{
+  if(!c)return c;
+  const canonical=canonicalCourseLocations.get(norm(c.name||""));
+  if(canonical)c.location=canonical;
+  return c;
+};
 const mergeCourse=c=>{
-  const existing=courses.find(x=>String(x.id)===String(c.id));
-  if(existing){Object.assign(existing,{...c,id:existing.id});cacheCourseMeta(existing);return existing;}
-  const nn=norm(c.name);
-  const same=courses.find(x=>norm(x.name)===nn && (!c.location || !x.location || norm(x.location)===norm(c.location)));
-  if(same){Object.assign(same,{...c,id:same.id});cacheCourseMeta(same);return same;}
-  courses.push(c); if(nn)byName.set(nn,c); cacheCourseMeta(c); return c;
+  const incoming=canonicalizeCourse({...c});
+  const existing=courses.find(x=>String(x.id)===String(incoming.id));
+  if(existing){
+    // Course identity/metadata is immutable after first creation. External API
+    // responses are search suggestions only and may never rewrite a Course Book
+    // course that the user already has or that is in the bundled catalog.
+    canonicalizeCourse(existing);
+    cacheCourseMeta(existing);
+    return existing;
+  }
+  const nn=norm(incoming.name);
+  const same=courses.find(x=>norm(x.name)===nn && (!incoming.location || !x.location || norm(x.location)===norm(incoming.location)));
+  if(same){
+    canonicalizeCourse(same);
+    cacheCourseMeta(same);
+    return same;
+  }
+  courses.push(incoming); if(nn)byName.set(nn,incoming); cacheCourseMeta(incoming); return incoming;
 };
 for(const c of courses){const nn=norm(c.name);if(nn&&!byName.has(nn))byName.set(nn,c);}
 
@@ -665,7 +686,8 @@ let filter="world",dragged=null,touchDrag=null;
 // course the user selected. The mapping is rebuilt deterministically from the
 // static 100-course lists on every load, so an app update cannot orphan rounds.
 const apiCourseMap=new Map();
-const apiAliasCache=JSON.parse(localStorage.getItem("theCourseBookApiMappings")||"{}");
+let apiAliasCache={};
+try{const rawApiAlias=localStorage.getItem("theCourseBookApiMappings");const parsedApiAlias=rawApiAlias?JSON.parse(rawApiAlias):{};if(parsedApiAlias&&typeof parsedApiAlias==="object")apiAliasCache=parsedApiAlias}catch(_){apiAliasCache={}}
 for(const [apiId,canonicalId] of Object.entries(apiAliasCache)){
   if(courses.some(c=>String(c.id)===String(canonicalId))) apiCourseMap.set(String(apiId),String(canonicalId));
 }
@@ -679,7 +701,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
-const APP_VERSION="v64";
+const APP_VERSION="v67";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -736,11 +758,11 @@ function setAuthStatus(label,signedIn){
   const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
   if(a)a.textContent=label; if(b){b.textContent=signedIn?"Sign out":"Sign in"} if(d)d.style.background=signedIn?"#c7aa6b":"#9a7b3f";
 }
-/* v65 data architecture: the bundled Course Book catalog is authoritative.
+/* v67 data architecture: the bundled Course Book catalog is authoritative.
    Supabase stores only the user's relationship to a course and round history.
    A cloud courses UUID is merely a storage key; it never supplies course name,
    location, ranking, or ordering. Matching is explicit/exact only. */
-const CLOUD_COURSE_MAP_KEY="theCourseBookCloudCourseMapV2";
+const CLOUD_COURSE_MAP_KEY="theCourseBookCloudCourseMapV3";
 let cloudCatalogMap={};
 try{const raw=localStorage.getItem(CLOUD_COURSE_MAP_KEY);const parsed=raw?JSON.parse(raw):{};if(parsed&&typeof parsed==="object")cloudCatalogMap=parsed}catch(_){cloudCatalogMap={}}
 function rememberCloudCatalogId(staticId,dbId){
@@ -752,6 +774,15 @@ function staticCourseForCloudRecord(db){
   if(!db)return null;
   const nameNorm=norm(db.name||"");
   if(!nameNorm)return null;
+  // Known international courses have an explicit canonical identity. Resolve
+  // them before considering the cloud location, which may be wrong/incomplete.
+  const canonical=canonicalCourseLocations.get(nameNorm);
+  if(canonical){
+    const canonicalMatches=courses.filter(c=>norm(c.name)===nameNorm);
+    if(canonicalMatches.length===1)return canonicalMatches[0];
+    const canonicalExact=canonicalMatches.find(c=>norm(c.location||"")===norm(canonical));
+    if(canonicalExact)return canonicalExact;
+  }
   // Explicit aliases are part of the bundled catalog, not fuzzy matching.
   const aliasId=rankingAliasNames.get(nameNorm)||michiganPublicAliases.get(nameNorm);
   if(aliasId){const aliased=courses.find(c=>String(c.id)===String(aliasId));if(aliased)return aliased}
@@ -762,9 +793,6 @@ function staticCourseForCloudRecord(db){
     const exactLocation=exactName.filter(c=>norm(c.location||"")===dbLoc);
     if(exactLocation.length===1)return exactLocation[0];
   }
-  // Canonical locations are authoritative for known international courses.
-  const canonical=canonicalCourseLocations.get(nameNorm);
-  if(canonical){const cc=exactName.find(c=>norm(c.location||"")===norm(canonical));if(cc)return cc}
   return null;
 }
 function staticCourseForId(id){return courses.find(c=>String(c.id)===String(id))||null}
@@ -779,8 +807,21 @@ async function ensureDbCourse(c,apiMeta=null){
   if(isStaticCourse(c)){
     const known=cloudCatalogMap[String(c.id)];
     if(known){
-      cloudCourseMap.set(String(c.id),String(known));
-      return String(known);
+      // A cached mapping is only trusted if the referenced shared course still
+      // matches the immutable Course Book identity/location. Older mappings are
+      // ignored if they point at the wrong cloud record.
+      const check=await supabaseClient.from("courses")
+        .select("id,name,city,state,country").eq("id",String(known)).limit(1);
+      if(check.error)throw check.error;
+      const row=check.data?.[0];
+      const rowLoc=row?norm([row.city,row.state,row.country].filter(Boolean).join(", ")):"";
+      const wantedCountry=courseCountryFromLocation(c.location,c.country);
+      const wantedLoc=norm(c.location||"");
+      const rowCountry=row?courseCountryFromLocation(rowLoc,row.country):"";
+      const valid=!!row && norm(row.name)===norm(c.name) && rowCountry===wantedCountry && (rowLoc===wantedLoc || (!rowLoc&&!wantedLoc));
+      if(valid){cloudCourseMap.set(String(c.id),String(known));return String(known);}
+      delete cloudCatalogMap[String(c.id)];
+      try{localStorage.setItem(CLOUD_COURSE_MAP_KEY,JSON.stringify(cloudCatalogMap))}catch(_){}
     }
 
     const {data,error}=await supabaseClient.from("courses")
@@ -861,11 +902,28 @@ async function loadCloudState(){
   // record. The cloud row is never merged into a static course object.
   function resolveLocal(db){
     if(!db)return null;
+
+    // 1) Explicit static-catalog mapping is always preferred.
     const mappedStaticId=Object.entries(cloudCatalogMap).find(([,dbid])=>String(dbid)===String(db.id))?.[0];
     if(mappedStaticId){
       const mapped=staticCourseForId(mappedStaticId);
       if(mapped){cloudCourseMap.set(String(mapped.id),String(db.id));return mapped;}
     }
+
+    // 2) Preserve the Course Book identity already used by this account.
+    // This is critical for older rounds/custom courses whose local ID predates
+    // the cloud catalog row. Never replace that identity with cloud-<uuid>.
+    const existingLocalIds=[...new Set(state.myList||[])];
+    const localMatches=existingLocalIds.map(id=>get(id)).filter(Boolean).filter(c=>norm(c.name)===norm(db.name||""));
+    if(localMatches.length===1){
+      const local=localMatches[0];
+      const canonical=canonicalCourseLocations.get(norm(local.name||db.name||""));
+      if(canonical)local.location=canonical;
+      cloudCourseMap.set(String(local.id),String(db.id));
+      return local;
+    }
+
+    // 3) Match the immutable bundled catalog by explicit name/identity.
     const staticMatch=staticCourseForCloudRecord(db);
     if(staticMatch){
       rememberCloudCatalogId(staticMatch.id,db.id);
@@ -873,10 +931,12 @@ async function loadCloudState(){
       return staticMatch;
     }
 
-    // Only genuinely custom courses are constructed from cloud metadata.
+    // 4) Only genuinely new/custom courses get a cloud-backed local identity.
+    // The cloud row supplies metadata only for these courses.
     const id=`cloud-${db.id}`;
-    const loc=[db.city,db.state,db.country].filter(Boolean).join(", ")||"Location not specified";
-    const country=courseCountryFromLocation(loc,db.country);
+    const canonicalKnown=canonicalCourseLocations.get(norm(db.name||""));
+    const loc=canonicalKnown||([db.city,db.state,db.country].filter(Boolean).join(", ")||"Location not specified");
+    const country=canonicalKnown?courseCountryFromLocation(canonicalKnown,""):courseCountryFromLocation(loc,db.country);
     const c={id,name:db.name,location:loc,country,region:country==="USA"?"custom":"international",world:null,usa:null,michigan:null,michiganPublic:null,public:null,logo:db.logo_url||"",website:db.website_url||""};
     const existing=courses.find(x=>String(x.id)===id);
     const result=existing||mergeCourse(c);
@@ -885,11 +945,15 @@ async function loadCloudState(){
   }
 
   // IMPORTANT: authenticated rounds are the only play-count source.
+  // Membership is taken from user_courses, but play counts are derived solely
+  // from rounds. This keeps a course in its existing position while still
+  // allowing a zero-round course to disappear when its last round is deleted.
   const next={played:{},myList:[...state.myList].filter(id=>get(id))};
   const rankRows=[];
+  const cloudCourseIds=[];
   for(const r of (userRows||[])){
     const c=resolveLocal(dbById.get(String(r.course_id)));
-    if(c)rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
+    if(c){rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});cloudCourseIds.push(c.id)}
   }
   const roundCounts=new Map();
   for(const r of (roundRows||[])){
@@ -898,20 +962,18 @@ async function loadCloudState(){
   }
   for(const [id,n] of roundCounts)next.played[id]=n;
 
-  // Existing local order is sacred. Cloud ranks are used only to establish a
-  // list on a genuinely empty device. Once a local list exists, cloud data may
-  // update counts and append new cloud courses, but can never reorder existing IDs.
-  next.myList=next.myList.filter(id=>Number(next.played[id]||0)>0);
+  // Existing personal order is sacred. Do NOT sort or rebuild an existing list
+  // from cloud personal_rank. First retain existing IDs that still have rounds;
+  // then append only genuinely new round-bearing courses.
   const hadLocalOrder=next.myList.length>0;
-  if(!hadLocalOrder && rankRows.length){
-    rankRows.sort((a,b)=>a.rank-b.rank);
-    const ordered=[];
-    for(const r of rankRows)if(Number(next.played[r.id]||0)>0&&!ordered.includes(r.id))ordered.push(r.id);
-    next.myList=ordered;
-  }else{
-    // Append only courses that are newly present in this account. They go at
-    // the end; their presence can never disturb an existing personal rank.
+  next.myList=next.myList.filter(id=>Number(next.played[id]||0)>0);
+  if(hadLocalOrder){
     for(const id of Object.keys(next.played))if(next.played[id]>0&&!next.myList.includes(id))next.myList.push(id);
+  }else if(rankRows.length){
+    // A genuinely empty device may establish its first list from the cloud.
+    // This branch runs only when there was no local personal order at all.
+    rankRows.sort((a,b)=>a.rank-b.rank);
+    for(const r of rankRows)if(Number(next.played[r.id]||0)>0&&!next.myList.includes(r.id))next.myList.push(r.id);
   }
 
   if(activeStateOwner!==String(currentUser.id))return false;
@@ -1074,6 +1136,7 @@ async function deleteRound(courseId,roundId,rowEl){
    const {error}=await supabaseClient.from("rounds").delete().eq("id",roundId).eq("user_id",currentUser.id);
    if(error)throw error;
    await loadCloudState();
+   if(activeStateOwner!==String(currentUser.id))return;
    renderTop();renderMine();
    if(rowEl)rowEl.remove();
    const remaining=count(courseId);
@@ -1107,6 +1170,7 @@ async function setPlayedCount(id,newQty){
       if(delCourse.error)throw delCourse.error;
     }
     await loadCloudState();
+    if(activeStateOwner!==String(currentUser.id))return true;
     renderTop();renderMine();
     toast(qty===0?"Course removed":`Rounds updated to ${qty}`);
     return true;
@@ -1490,6 +1554,7 @@ async function logRounds(id,qty){
     // The rounds table is the only source of truth for authenticated play counts.
     // Reload from Supabase before changing the UI/local cache.
     await loadCloudState();
+    if(activeStateOwner!==String(currentUser.id))return;
     renderTop();renderMine();
     modal.classList.remove("open");
     toast(`${qty} round${qty===1?"":"s"} added`);
@@ -1515,7 +1580,9 @@ document.getElementById("save").onclick=async()=>{
       const ins=await supabaseClient.from("user_courses").insert({user_id:currentUser.id,course_id:dbid,times_played:1,personal_rank:rank,updated_at:new Date().toISOString()});
       if(ins.error)throw ins.error;
     }
-    await loadCloudState();renderTop();renderMine();
+    await loadCloudState();
+    if(activeStateOwner!==String(currentUser.id))return;
+    renderTop();renderMine();
     addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";document.getElementById("newrank").value="";toast(`Course added at #${rank}`);
   }catch(e){console.warn("Add course failed",e);toast("Could not save the course/round. Try again")}
 };
@@ -1567,11 +1634,15 @@ if(supabaseClient){
       renderTop();renderMine();
     }catch(e){
       console.warn("Cloud account load failed",e);
-      // Never present cached/local play counts as authenticated rounds.
-      state.played={};
-      save();
-      renderTop();renderMine();
-      toast("Couldn’t connect to your account — try again");
+      // A previous account's async request can finish after the user has
+      // switched accounts. Never let that stale request mutate the new user's
+      // state or save into the new user's local cache.
+      if(activeStateOwner===String(nextUser.id) && currentUser && String(currentUser.id)===String(nextUser.id)){
+        state.played={};
+        save();
+        renderTop();renderMine();
+        toast("Couldn’t connect to your account — try again");
+      }
     }
   }
 
