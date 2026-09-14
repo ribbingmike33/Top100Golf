@@ -201,7 +201,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="backdrop" id="modal">
 <div class="modal logmodal">
 <div class="modalhead"><div><div class="eyebrow">Round log</div><h3 id="modalTitle">Log a Round</h3></div><button class="modalclose" id="close" aria-label="Close">×</button></div>
-<div class="sub" id="modalSub">Search for the course you played.</div>
+<div class="sub" id="modalSub">Search for the course you played.</div><button class="secondary" id="retryLogConnection" type="button" style="display:none;margin:0 0 14px;width:100%">Try Again</button>
 <div class="group searchgroup"><label>Course</label><input id="modalsearch" autocomplete="off" placeholder="Start typing a course name..."></div>
 <div id="results"></div>
 <div id="quantityBox" style="display:none">
@@ -646,7 +646,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
-const APP_VERSION="v59";
+const APP_VERSION="v61";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -806,17 +806,15 @@ async function loadCloudState(){
 
   // Never blank local state while refreshing. Cloud data is merged into the
   // existing state only after both reads have succeeded.
-  const next={played:{...state.played},myList:[...state.myList].filter(id=>get(id))};
+  const next={played:{},myList:[...state.myList].filter(id=>get(id))};
   const rankRows=[];
 
   for(const r of (userRows||[])){
     const c=resolveLocal(dbById.get(String(r.course_id)));
     if(!c)continue;
-    const qty=Number(r.times_played)||0;
-    if(qty>0){
-      next.played[c.id]=Math.max(next.played[c.id]||0,qty);
-      rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
-    }
+    // times_played in user_courses is metadata only. Authenticated round
+    // counts come exclusively from the rounds table below.
+    rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
   }
 
   const roundCounts=new Map();
@@ -825,7 +823,12 @@ async function loadCloudState(){
     if(!c)continue;
     roundCounts.set(c.id,(roundCounts.get(c.id)||0)+1);
   }
-  for(const [id,n] of roundCounts)next.played[id]=Math.max(next.played[id]||0,n);
+  for(const [id,n] of roundCounts)next.played[id]=n;
+
+  // A course belongs in My List only when at least one authenticated round
+  // exists. If the final cloud round was deleted, remove it from the list too.
+  // This is based only on Supabase rounds, never on cached/local play counts.
+  next.myList=next.myList.filter(id=>Number(next.played[id]||0)>0);
 
   // NEVER reorder an existing local list during hydration. personal_rank is
   // metadata, not a sorting instruction. A course moves only after the user
@@ -966,84 +969,75 @@ function renderMine(){
  box.appendChild(el)});
 }
 async function deleteLatestRound(courseId){
- const c=get(courseId);if(!c)return;
- const old=count(courseId);if(old<=0)return;
- if(!confirm(`Delete one round from ${c.name}?`))return;
- if(supabaseClient&&currentUser){
-   try{
-     const dbid=cloudCourseMap.get(String(courseId))||await ensureDbCourse(c);
-     if(!dbid)throw new Error("Course not found in cloud");
-     const {data:rows,error}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false}).limit(1);
-     if(error)throw error;
-     const latest=(rows||[])[0];
-     if(latest?.id){
-       const del=await supabaseClient.from("rounds").delete().eq("id",latest.id).eq("user_id",currentUser.id);
-       if(del.error)throw del.error;
-     }
-   }catch(e){console.warn("Direct round delete failed",e);toast("Could not delete round");return}
- }
- if(old<=1){delete state.played[courseId];state.myList=state.myList.filter(x=>x!==courseId)}else state.played[courseId]=old-1;
- save();
- if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId,{updateRank:false})}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
- renderTop();renderMine();
- if(count(courseId)===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}
- toast("Round deleted");
+ if(!currentUser||!supabaseClient){toast("Sign in to manage rounds");return}
+ try{
+   const c=get(courseId);if(!c)return;
+   const dbid=cloudCourseMap.get(String(courseId))||await ensureDbCourse(c);
+   const {data:rows,error}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false}).limit(1);
+   if(error)throw error;
+   if(!rows?.length){toast("No cloud round found. Try again");return}
+   await deleteRound(courseId,rows[0].id,null);
+ }catch(e){console.warn("Latest round lookup failed",e);toast("Could not connect to your rounds. Try again")}
 }
 
 async function openRoundHistory(id){
  const c=get(id);if(!c)return;const box=document.getElementById("roundHistoryList");
- document.getElementById("roundModalTitle").textContent=c.name;document.getElementById("roundModalSub").textContent=`${count(id)} round${count(id)===1?"":"s"} logged`+(currentUser?" · Synced to your account":" · Stored on this device");box.innerHTML='<div class="roundhistory-empty">Loading rounds…</div>';document.getElementById("roundmodal").classList.add("open");
+ document.getElementById("roundModalTitle").textContent=c.name;
+ if(!currentUser||!supabaseClient){document.getElementById("roundModalSub").textContent="Sign in to view logged rounds.";box.innerHTML='<div class="roundhistory-empty">Rounds are stored only in your account.</div>';document.getElementById("roundmodal").classList.add("open");return}
+ document.getElementById("roundModalSub").textContent="Loading your logged rounds…";box.innerHTML='<div class="roundhistory-empty">Loading rounds…</div>';document.getElementById("roundmodal").classList.add("open");
  let rows=[];let cloudHistoryFailed=false;if(supabaseClient&&currentUser){try{const dbid=await ensureDbCourse(c);const {data,error}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false});if(error)throw error;rows=data||[]}catch(e){cloudHistoryFailed=true;console.warn("Round history load failed",e);box.innerHTML="<div class=\"roundhistory-empty\">Could not load your cloud rounds. Try again.</div>";toast("Could not load cloud round history")}}
- if(cloudHistoryFailed)return;if(!rows.length)rows=Array.from({length:count(id)},(_,i)=>({id:null,played_at:null,localNumber:i+1}));box.innerHTML="";
- rows.forEach((r,i)=>{const row=document.createElement("div");row.className="roundhistory-row";const date=r.played_at?new Date(r.played_at).toLocaleString([],{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}):`Round ${i+1}`;row.innerHTML=`<div class="roundhistory-date">${date}<small>${r.id?"Logged round":"Local round"}</small></div><button class="delete-round" type="button">Delete</button>`;row.querySelector(".delete-round").onclick=()=>deleteRound(id,r.id,row);box.appendChild(row)})
+ if(cloudHistoryFailed)return;
+ if(!rows.length){box.innerHTML='<div class="roundhistory-empty">No rounds are logged in your account.</div>';return}
+ box.innerHTML="";
+ rows.forEach((r,i)=>{const row=document.createElement("div");row.className="roundhistory-row";const date=r.played_at?new Date(r.played_at).toLocaleString([],{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}):"";row.innerHTML=`<div class="roundhistory-date">${date}<small>Logged in your account</small></div><button class="delete-round" type="button">Delete</button>`;row.querySelector(".delete-round").onclick=()=>deleteRound(id,r.id,row);box.appendChild(row)})
 }
 async function deleteRound(courseId,roundId,rowEl){
- if(!confirm("Delete this round?"))return;if(roundId&&supabaseClient&&currentUser){const {error}=await supabaseClient.from("rounds").delete().eq("id",roundId).eq("user_id",currentUser.id);if(error){console.warn("Round delete failed",error);toast("Could not delete round");return}}
- const old=count(courseId);if(old<=1){delete state.played[courseId];state.myList=state.myList.filter(x=>x!==courseId)}else state.played[courseId]=old-1;save();
- if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId,{updateRank:false})}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
- if(rowEl)rowEl.remove();renderTop();renderMine();if(count(courseId)===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}document.getElementById("roundModalSub").textContent=`${count(courseId)} round${count(courseId)===1?"":"s"} logged`+(currentUser?" · Synced to your account":" · Stored on this device");toast("Round deleted")
+ if(!currentUser||!supabaseClient){toast("Sign in to manage rounds");return}
+ if(!roundId){toast("This round is not stored in your account");return}
+ if(!confirm("Delete this round?"))return;
+ try{
+   const {error}=await supabaseClient.from("rounds").delete().eq("id",roundId).eq("user_id",currentUser.id);
+   if(error)throw error;
+   await loadCloudState();
+   renderTop();renderMine();
+   if(rowEl)rowEl.remove();
+   const remaining=count(courseId);
+   if(remaining===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}
+   document.getElementById("roundModalSub").textContent=`${remaining} round${remaining===1?"":"s"} logged · Synced to your account`;
+   toast("Round deleted");
+ }catch(e){console.warn("Round delete failed",e);toast("Could not delete round. Try again")}
 }
+
 document.getElementById("roundClose").onclick=()=>document.getElementById("roundmodal").classList.remove("open");document.getElementById("roundDone").onclick=()=>document.getElementById("roundmodal").classList.remove("open");document.getElementById("roundmodal").addEventListener("click",e=>{if(e.target.id==="roundmodal")document.getElementById("roundmodal").classList.remove("open")});
 
 async function setPlayedCount(id,newQty){
+  if(!currentUser||!supabaseClient){toast("Sign in to manage rounds");return false}
   const qty=Math.max(0,Math.floor(Number(newQty)||0));
-  const old=count(id);
-  if(qty===old)return true;
-  state.played[id]=qty;
-  if(qty<=0){
-    delete state.played[id];
-    state.myList=state.myList.filter(x=>x!==id);
-  }else if(!state.myList.includes(id))state.myList.push(id);
-  save(); renderTop(); renderMine();
-  if(supabaseClient&&currentUser){
-    try{
-      const dbid=await ensureDbCourse(get(id));
-      if(!dbid)throw new Error("Course not found in cloud");
-      const {data:rounds,error:roundErr}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false});
-      if(roundErr)throw roundErr;
-      const rows=rounds||[];
-      if(qty<rows.length){
-        const remove=rows.slice(qty).map(r=>r.id).filter(Boolean);
-        if(remove.length){
-          const del=await supabaseClient.from("rounds").delete().in("id",remove).eq("user_id",currentUser.id);
-          if(del.error)throw del.error;
-        }
-      }else if(qty>rows.length){
-        const addN=qty-rows.length;
-        const inserts=Array.from({length:addN},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
-        const ins=await supabaseClient.from("rounds").insert(inserts);
-        if(ins.error)throw ins.error;
-      }
-      await syncCourseToCloud(id);
-    }catch(e){
-      console.warn("Round count cloud update failed",e);
-      toast("Updated here; cloud update failed");
-      return false;
+  const c=get(id);if(!c)return false;
+  try{
+    const dbid=cloudCourseMap.get(String(id))||await ensureDbCourse(c);
+    if(!dbid)throw new Error("Course not found in cloud");
+    const {data:rounds,error:roundErr}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false});
+    if(roundErr)throw roundErr;
+    const rows=rounds||[];
+    if(qty<rows.length){
+      const remove=rows.slice(qty).map(r=>r.id).filter(Boolean);
+      if(remove.length){const del=await supabaseClient.from("rounds").delete().in("id",remove).eq("user_id",currentUser.id);if(del.error)throw del.error;}
+    }else if(qty>rows.length){
+      const inserts=Array.from({length:qty-rows.length},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
+      const ins=await supabaseClient.from("rounds").insert(inserts);if(ins.error)throw ins.error;
     }
-  }
-  toast(qty===0?"Course removed":`Rounds updated to ${qty}`);
-  return true;
+    if(qty===0){
+      const delCourse=await supabaseClient.from("user_courses").delete().eq("user_id",currentUser.id).eq("course_id",dbid);
+      if(delCourse.error)throw delCourse.error;
+    }
+    await loadCloudState();
+    renderTop();renderMine();
+    toast(qty===0?"Course removed":`Rounds updated to ${qty}`);
+    return true;
+  }catch(e){console.warn("Round count cloud update failed",e);toast("Could not save rounds. Try again");return false}
 }
+
 function startCountEdit(id,wrap){
   if(wrap.classList.contains("editing"))return;
   const old=count(id);
@@ -1223,7 +1217,27 @@ function resetLogSearchConnection(){
   apiSearchSession=Date.now();
   miDirectoryPromise=null;
 }
-document.getElementById("log").onclick=()=>{resetLogSearchConnection();modal.classList.add("open");syncVisibleViewport();document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";selectedCourseId=null;document.getElementById("results").style.display="flex";document.getElementById("results").innerHTML="";renderResults();setTimeout(()=>{syncVisibleViewport();document.getElementById("modalsearch").focus()},50)};
+async function verifyLogCloudConnection(){
+  if(!supabaseClient||!currentUser)throw new Error("Not signed in");
+  const {data,error}=await supabaseClient.auth.getSession();
+  if(error)throw error;
+  if(!data?.session?.user||String(data.session.user.id)!==String(currentUser.id))throw new Error("Session unavailable");
+  const probe=await supabaseClient.from("user_courses").select("course_id").eq("user_id",currentUser.id).limit(1);
+  if(probe.error)throw probe.error;
+  return true;
+}
+async function prepareLogConnection(){
+  const input=document.getElementById("modalsearch"),retry=document.getElementById("retryLogConnection"),results=document.getElementById("results");
+  retry.style.display="none";input.disabled=true;results.innerHTML="";
+  if(!currentUser){document.getElementById("modalSub").textContent="Sign in to log rounds. Your rounds are stored in your account.";retry.textContent="Sign In";retry.style.display="block";return false}
+  document.getElementById("modalSub").textContent="Connecting to your account…";
+  try{
+    await verifyLogCloudConnection();
+    input.disabled=false;document.getElementById("modalSub").textContent="Search for the course you played.";renderResults();return true;
+  }catch(e){console.warn("Log cloud connection failed",e);document.getElementById("modalSub").textContent="Couldn’t connect to your account. Try again.";retry.textContent="Try Again";retry.style.display="block";return false}
+}
+document.getElementById("log").onclick=async()=>{resetLogSearchConnection();modal.classList.add("open");syncVisibleViewport();document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";selectedCourseId=null;document.getElementById("results").style.display="flex";document.getElementById("results").innerHTML="";const ok=await prepareLogConnection();if(ok)setTimeout(()=>{syncVisibleViewport();document.getElementById("modalsearch").focus()},50)};
+document.getElementById("retryLogConnection").onclick=async()=>{if(!currentUser){authMode="signin";updateAuthUI();modal.classList.remove("open");authmodal.classList.add("open");return}resetLogSearchConnection();await prepareLogConnection();if(!document.getElementById("modalsearch").disabled)document.getElementById("modalsearch").focus()};
 document.getElementById("close").onclick=()=>modal.classList.remove("open");
 document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";document.getElementById("results").style.display="flex";document.getElementById("modalsearch").focus()};
 document.getElementById("modalsearch").oninput=()=>{syncVisibleViewport();renderResults()};
@@ -1372,33 +1386,54 @@ function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id)
 document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;const qty=Math.max(1,parseInt(document.getElementById("timesPlayed").value,10)||1);logRounds(selectedCourseId,qty)};
 document.getElementById("timesPlayed").addEventListener("focus",()=>{syncVisibleViewport();setTimeout(()=>document.getElementById("confirmLog").scrollIntoView({behavior:"smooth",block:"nearest"}),250)});
 async function logRounds(id,qty){
-  if(currentUser&&activeStateOwner!==String(currentUser.id))return toast("Account is still connecting — try again");
-  const raw=get(id);
-  const apiMapped=raw&&apiCourseMap.get(String(raw.id)) ? get(apiCourseMap.get(String(raw.id))) : null;
-  const mapped=apiMapped|| (raw?resolveRankedCourse(raw.name,raw.location,{strict:false}):null);
-  if(mapped && mapped.id!==id){
-    const prior=count(id);
-    delete state.played[id];
-    id=mapped.id;
-    state.played[id]=count(id)+qty+prior;
-    state.myList=state.myList.filter(x=>x!==raw.id);
-    if(!state.myList.includes(id))state.myList.push(id);
-  }else{
-    state.played[id]=count(id)+qty;
-  }if(!state.myList.includes(id))state.myList.push(id);save();
-  if(supabaseClient&&currentUser){
-    try{const dbid=await ensureDbCourse(get(id));await syncCourseToCloud(id,{updateRank:false});
-      const rows=Array.from({length:qty},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
-      const {error}=await supabaseClient.from("rounds").insert(rows);if(error)throw error;
-    }catch(e){console.warn(e);toast(e?.code==="COURSE_NOT_IN_CATALOG"?"Saved locally; course is not in cloud catalog":"Saved locally; cloud sync failed")}
+  if(!currentUser||!supabaseClient){toast("Sign in to log a round");return}
+  if(activeStateOwner!==String(currentUser.id)){toast("Account is still connecting — try again");return}
+  const raw=get(id);if(!raw)return;
+  let target=raw;
+  const apiMapped=apiCourseMap.get(String(raw.id));
+  if(apiMapped && get(apiMapped))target=get(apiMapped);
+  else if(!state.myList.includes(raw.id)){
+    const ranked=resolveRankedCourse(raw.name,raw.location,{strict:false});
+    if(ranked)target=ranked;
   }
-  modal.classList.remove("open");renderTop();renderMine();toast(`${qty} round${qty===1?"":"s"} added`)
+  try{
+    const dbid=await ensureDbCourse(target);
+    if(!dbid)throw new Error("Course not found in cloud");
+    const rows=Array.from({length:qty},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
+    const {error}=await supabaseClient.from("rounds").insert(rows);
+    if(error)throw error;
+    // The rounds table is the only source of truth for authenticated play counts.
+    // Reload from Supabase before changing the UI/local cache.
+    await loadCloudState();
+    renderTop();renderMine();
+    modal.classList.remove("open");
+    toast(`${qty} round${qty===1?"":"s"} added`);
+  }catch(e){console.warn("Round log failed",e);toast("Could not save the round. Try again")}
 }
+
 document.getElementById("add").onclick=()=>{modal.classList.remove("open");addmodal.classList.add("open");document.getElementById("newname").focus()};
 document.getElementById("addclose").onclick=()=>addmodal.classList.remove("open");
-document.getElementById("save").onclick=async()=>{let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();if(!name)return toast("Enter a course name");let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};courses.push(c);state.played[c.id]=1;
- let rank=Number(requestedRank);if(!requestedRank||!Number.isFinite(rank)){rank=state.myList.length+1}else{rank=Math.max(1,Math.min(Math.floor(rank),state.myList.length+1))}state.myList.splice(rank-1,0,c.id);save();
- if(supabaseClient&&currentUser){try{const dbid=await ensureDbCourse(c);await syncCourseToCloud(c.id);await supabaseClient.from("rounds").insert({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()})}catch(e){console.warn(e)}}addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";document.getElementById("newrank").value="";renderTop();renderMine();toast(`Course added at #${rank}`)};
+document.getElementById("save").onclick=async()=>{
+  if(!currentUser||!supabaseClient){toast("Sign in before adding a course");return}
+  let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();
+  if(!name)return toast("Enter a course name");
+  let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};
+  let rank=Number(requestedRank);if(!requestedRank||!Number.isFinite(rank))rank=state.myList.length+1;else rank=Math.max(1,Math.min(Math.floor(rank),state.myList.length+1));
+  try{
+    const dbid=await ensureDbCourse(c);
+    if(!dbid)throw new Error("Course not found in cloud");
+    const {error}=await supabaseClient.from("rounds").insert({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()});
+    if(error)throw error;
+    // Add the course to the user's list only after the round exists in Supabase.
+    const {data:existing}=await supabaseClient.from("user_courses").select("id").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
+    if(!existing?.length){
+      const ins=await supabaseClient.from("user_courses").insert({user_id:currentUser.id,course_id:dbid,times_played:1,personal_rank:rank,updated_at:new Date().toISOString()});
+      if(ins.error)throw ins.error;
+    }
+    await loadCloudState();renderTop();renderMine();
+    addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";document.getElementById("newrank").value="";toast(`Course added at #${rank}`);
+  }catch(e){console.warn("Add course failed",e);toast("Could not save the course/round. Try again")}
+};
 
 </script>
 
@@ -1447,8 +1482,11 @@ if(supabaseClient){
       renderTop();renderMine();
     }catch(e){
       console.warn("Cloud account load failed",e);
+      // Never present cached/local play counts as authenticated rounds.
+      state.played={};
+      save();
       renderTop();renderMine();
-      toast("Cloud refresh failed — local data kept");
+      toast("Couldn’t connect to your account — try again");
     }
   }
 
@@ -1476,8 +1514,14 @@ async function migrateAndLoadCloud(){
   if(error)throw error;
   const hasCloud=(cloudRows||[]).length>0;
   const migrationKey="theCourseBookMigrated_"+currentUser.id;
-  if(!hasCloud && !localStorage.getItem(migrationKey) && (state.myList.length||Object.keys(state.played).length)){
-    await syncAllToCloud();
+  if(!hasCloud && !localStorage.getItem(migrationKey) && state.myList.length){
+    // Migrate ranking membership only. Never turn cached/local play counts into
+    // fake rounds. Authenticated round history exists only in Supabase rounds.
+    for(const id of state.myList){
+      await syncCourseToCloud(id,{updateRank:true});
+    }
+    state.played={};save();
+    localStorage.setItem(migrationKey,"1");
   }
   renderTop();renderMine();
 }
