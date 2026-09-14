@@ -115,23 +115,124 @@ const supabaseClient = (window.supabase && typeof window.supabase.createClient =
 window.FAIRWAY_SUPABASE = supabaseClient;
 </script>
 <script>
-/* Demo seed data. Replace this array with the complete 900-course database:
-   Michigan 300 + USA 300 + World 300. */
-const courses=[
+/* Course data
+   Michigan is loaded from OpenGolfAPI's complete Michigan course directory.
+   The USA list is the 2025 GolfDay Top 500 Public Courses.
+   World is built from the latest GOLF, Golf Digest and Top100GolfCourses lists
+   when the remote ranking pages are available; the app keeps a fallback list
+   so the UI still works if a ranking source is temporarily unavailable.
+*/
+const courses = [
 {id:"w1",name:"Pine Valley Golf Club",location:"Pine Valley, New Jersey",region:"usa",world:1,usa:1,michigan:null},
 {id:"w2",name:"Augusta National Golf Club",location:"Augusta, Georgia",region:"usa",world:2,usa:2,michigan:null},
 {id:"w3",name:"Royal County Down",location:"Newcastle, Northern Ireland",region:"world",world:3,usa:null,michigan:null},
 {id:"w4",name:"St Andrews — Old Course",location:"St Andrews, Scotland",region:"world",world:4,usa:null,michigan:null},
 {id:"w5",name:"Oakmont Country Club",location:"Oakmont, Pennsylvania",region:"usa",world:5,usa:3,michigan:null},
 {id:"w6",name:"Pebble Beach Golf Links",location:"Pebble Beach, California",region:"usa",world:6,usa:4,michigan:null},
-{id:"w7",name:"Cypress Point Club",location:"Pebble Beach, California",region:"usa",world:7,usa:5,michigan:null},
-{id:"m1",name:"Crystal Downs Country Club",location:"Frankfort, Michigan",region:"michigan",world:20,usa:18,michigan:1},
-{id:"m2",name:"Oakland Hills Country Club",location:"Bloomfield Hills, Michigan",region:"michigan",world:45,usa:40,michigan:2},
-{id:"m3",name:"Arcadia Bluffs",location:"Arcadia, Michigan",region:"michigan",world:72,usa:61,michigan:3},
-{id:"m4",name:"Forest Dunes Golf Club",location:"Roscommon, Michigan",region:"michigan",world:98,usa:83,michigan:4},
-{id:"w8",name:"Whistling Straits",location:"Kohler, Wisconsin",region:"usa",world:30,usa:20,michigan:null},
-{id:"w9",name:"Cabot Cliffs",location:"Inverness, Nova Scotia",region:"world",world:12,usa:null,michigan:null}
+{id:"w7",name:"Cypress Point Club",location:"Pebble Beach, California",region:"usa",world:7,usa:5,michigan:null}
 ];
+
+const API_BASE = "https://api.opengolfapi.org/v1";
+const RANK_PROXY = "https://r.jina.ai/";
+const rankingUrls = {
+  usa: "https://golfday.us/blog/category/golf-course-rankings/",
+  worldGolf: "https://golf.com/top100courses/",
+  worldDigest: "https://www.golfdigest.com/story/worlds-100-greatest-golf-courses-2024-2025",
+  worldTop100: "https://www.top100golfcourses.com/golf-courses/world"
+};
+
+function normalizeCourseName(name){
+  return name.replace(/\s+/g," ").replace(/\u00a0/g," ").trim();
+}
+function slugId(name, location=""){
+  return "course-"+(name+"|"+location).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,120);
+}
+function mergeCourse(c){
+  const existing = courses.find(x =>
+    x.name.toLowerCase() === c.name.toLowerCase() &&
+    (x.location||"").toLowerCase() === (c.location||"").toLowerCase()
+  ) || courses.find(x => x.name.toLowerCase() === c.name.toLowerCase());
+  if(existing){ Object.assign(existing,c,{id:existing.id}); return existing; }
+  c.id=c.id||slugId(c.name,c.location); courses.push(c); return c;
+}
+function parseGolfDay(markdown){
+  const out=[];
+  const re=/\|\s*(\d+)\s*\|\s*(?:Public|Private)\s*\|\s*([^|]+)\|\s*([A-Z]{2})\s*\|/g;
+  let m;
+  while((m=re.exec(markdown))){
+    const rank=Number(m[1]), name=normalizeCourseName(m[2]), state=m[3];
+    if(rank>500) continue;
+    out.push({id:slugId(name,state),name,location:state,country:"USA",region:"usa",usa:rank,world:null,michigan:null});
+  }
+  return out;
+}
+function parseRankingPage(markdown, kind){
+  const out=[];
+  const patterns=[
+    /\|\s*(\d{1,3})\s*\|[^|]*\|\s*([^|]+)\|\s*([^|]+)\|/g,
+    /(?:^|\n)\s*(\d{1,3})\.\s+([^\n—–-]+?)(?:\s+[—–-]\s+|\s{2,})([^\n]+)$/gm
+  ];
+  for(const re of patterns){
+    let m;
+    while((m=re.exec(markdown))){
+      const rank=Number(m[1]); if(rank<1||rank>100) continue;
+      const name=normalizeCourseName(m[2]);
+      if(!name || /rank|course|location/i.test(name)) continue;
+      const loc=normalizeCourseName(m[3]||"");
+      out.push({id:slugId(name,loc),name,location:loc,region:"world",world:rank,usa:null,michigan:null});
+    }
+    if(out.length>=100) break;
+  }
+  return out.slice(0,100);
+}
+async function loadRankings(){
+  try{
+    const usaText=await fetch(RANK_PROXY+rankingUrls.usa).then(r=>r.text());
+    parseGolfDay(usaText).forEach(c=>mergeCourse(c));
+  }catch(e){ console.warn("USA ranking load failed",e); }
+
+  const worldLists=[];
+  for(const key of ["worldGolf","worldDigest","worldTop100"]){
+    try{
+      const txt=await fetch(RANK_PROXY+rankingUrls[key]).then(r=>r.text());
+      const list=parseRankingPage(txt,"world");
+      if(list.length) worldLists.push(list);
+    }catch(e){ console.warn("World ranking load failed",key,e); }
+  }
+  const byName=new Map();
+  worldLists.flat().forEach(c=>{
+    const key=c.name.toLowerCase();
+    const x=byName.get(key)||{...c,sources:[]};
+    x.sources.push(c.world);
+    x.world=Math.round(x.sources.reduce((a,b)=>a+b,0)/x.sources.length);
+    byName.set(key,x);
+  });
+  [...byName.values()].sort((a,b)=>a.world-b.world).slice(0,300).forEach((c,i)=>{
+    c.world=i+1;
+    mergeCourse(c);
+  });
+}
+async function loadMichigan(){
+  try{
+    const res=await fetch(API_BASE+"/courses/state/MI");
+    if(!res.ok) throw new Error("Michigan API "+res.status);
+    const data=await res.json();
+    const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
+    list.forEach((c,i)=>{
+      const name=normalizeCourseName(c.name||c.course_name||"Unnamed Course");
+      const city=normalizeCourseName(c.city||"Michigan");
+      const item=mergeCourse({
+        id:slugId(name,city),
+        name, location:city+", Michigan", country:"USA", region:"michigan",
+        world:null,usa:null,michigan:i+1,
+        logo:c.logo_url||c.logo||"",
+        website:c.website||c.website_url||""
+      });
+      item.michigan=i+1;
+    });
+  }catch(e){ console.warn("Michigan course load failed",e); }
+}
+
 
 let state=JSON.parse(localStorage.getItem("theCourseBook")||'{"played":{},"myList":[]}');
 let filter="world",dragged=null;
@@ -149,8 +250,12 @@ function renderTop(){
  .slice(0,100);
  let box=document.getElementById("toplist");box.innerHTML="";
  arr.forEach(c=>{let r=c[filter==="world"?"world":filter==="usa"?"usa":"michigan"];let p=count(c.id);let el=document.createElement("div");el.className="row";el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
- let top=courses.filter(c=>c.world&&c.world<=100),played=top.filter(c=>count(c.id)).length;
- document.getElementById("num").textContent=played;document.getElementById("fill").style.width=played+"%";document.getElementById("remain").textContent=(100-played)+" remaining";
+ const rankKey=filter==="world"?"world":filter==="usa"?"usa":"michigan";
+ let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
+ document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA":"Michigan")+" Top 100";
+ document.getElementById("num").textContent=played;
+ document.getElementById("fill").style.width=played+"%";
+ document.getElementById("remain").textContent=(100-played)+" remaining";
 }
 function renderMine(){
  let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map(get).filter(Boolean).filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
@@ -167,7 +272,37 @@ document.getElementById("log").onclick=()=>{modal.classList.add("open");document
 document.getElementById("close").onclick=()=>modal.classList.remove("open");
 document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.getElementById("modalsearch").focus()};
 document.getElementById("modalsearch").oninput=renderResults;
-function renderResults(){let q=document.getElementById("modalsearch").value.toLowerCase(),box=document.getElementById("results");box.innerHTML="";courses.filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)).slice(0,10).forEach(c=>{let b=document.createElement("button");b.className="result";b.innerHTML=`<strong>${c.name}</strong><small>${c.location}${c.michigan?` · Michigan #${c.michigan}`:""}${c.usa?` · USA #${c.usa}`:""}${c.world?` · World #${c.world}`:""}</small>`;b.onclick=()=>selectCourse(c.id);box.appendChild(b)})}
+let remoteSearchTimer=null;
+async function searchOpenGolf(q){
+  q=q.trim(); if(q.length<2) return [];
+  try{
+    const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=25`);
+    if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
+    const data=await res.json();
+    const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
+    return list.map((c,i)=>{
+      const name=normalizeCourseName(c.name||c.course_name||"Unnamed Course");
+      const city=normalizeCourseName(c.city||"");
+      const state=normalizeCourseName(c.state||c.state_code||"");
+      const location=[city,state].filter(Boolean).join(", ") || normalizeCourseName(c.location||"");
+      return mergeCourse({id:String(c.id||slugId(name,location)),name,location,country:c.country||"USA",region:state==="MI"?"michigan":"usa",world:null,usa:null,michigan:null,logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""});
+    });
+  }catch(e){ console.warn("OpenGolfAPI search failed",e); return []; }
+}
+function renderResults(){
+  const q=document.getElementById("modalsearch").value.toLowerCase().trim(),box=document.getElementById("results");
+  box.innerHTML="";
+  const local=courses.filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)).slice(0,10);
+  local.forEach(c=>{let b=document.createElement("button");b.className="result";b.innerHTML=`<strong>${c.name}</strong><small>${c.location}${c.michigan?` · Michigan #${c.michigan}`:""}${c.usa?` · USA #${c.usa}`:""}${c.world?` · World #${c.world}`:""}</small>`;b.onclick=()=>selectCourse(c.id);box.appendChild(b)});
+  if(q.length>=2){
+    clearTimeout(remoteSearchTimer);
+    remoteSearchTimer=setTimeout(async()=>{
+      const remote=await searchOpenGolf(q);
+      const shown=new Set(local.map(c=>c.id));
+      remote.filter(c=>!shown.has(c.id)).slice(0,10).forEach(c=>{let b=document.createElement("button");b.className="result";b.innerHTML=`<strong>${c.name}</strong><small>${c.location}</small>`;b.onclick=()=>selectCourse(c.id);box.appendChild(b)});
+    },180);
+  }
+}
 function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id);document.getElementById("modalTitle").textContent=c.name;document.getElementById("modalsearch").value=c.name;document.getElementById("results").innerHTML=`<div class="result" style="cursor:default"><strong>${c.name}</strong><small>${c.location}${existing?` · Already played ${existing}×`:""}</small></div>`;document.getElementById("quantityBox").style.display="block";document.getElementById("searchActions").style.display="none";document.getElementById("timesPlayed").value=existing?1:1;document.getElementById("timesPlayed").focus();document.getElementById("timesPlayed").select()}
 document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;const qty=Math.max(1,parseInt(document.getElementById("timesPlayed").value,10)||1);logRounds(selectedCourseId,qty)};
 function logRounds(id,qty){state.played[id]=count(id)+qty;if(!state.myList.includes(id))state.myList.push(id);save();modal.classList.remove("open");renderTop();renderMine();toast(`${qty} round${qty===1?"":"s"} added`)}
@@ -178,9 +313,12 @@ document.getElementById("save").onclick=()=>{let name=document.getElementById("n
 </script>
 
 <script>
-// Initial render: without this, the lists remain empty until the user interacts.
-renderTop();
-renderMine();
+// Load the real course directories, then render.
+(async function(){
+  await Promise.allSettled([loadMichigan(), loadRankings()]);
+  renderTop();
+  renderMine();
+})();
 
 (async function(){
   const el=document.querySelector('.user-status, #userStatus, [data-user-status]');
