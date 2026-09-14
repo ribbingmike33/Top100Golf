@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -29,6 +29,12 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px 1fr 45px;gap:9px;padding:10px}.row .meta{display:none}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+.authbar{max-width:1080px;margin:10px auto 0;padding:0 22px;display:flex;justify-content:flex-end;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
+.authbar>div{display:flex;align-items:center;gap:7px}.authdot{width:7px;height:7px;border-radius:50%;background:#9a7b3f;display:inline-block}
+.authbtn{border:1px solid rgba(199,170,107,.35);background:rgba(255,255,255,.035);color:var(--gold);border-radius:999px;padding:7px 12px;font-weight:700;cursor:pointer}
+.authmodal{max-width:430px}.autherror{min-height:18px;color:#c96d63;font-size:12px;margin:-2px 0 10px}
+@media(max-width:760px){.authbar{padding:0 16px;margin-top:8px}.authbar{justify-content:space-between}.authmodal{width:100%;max-width:none;border-radius:20px 20px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom))}}
 </style>
 
 <style>
@@ -121,6 +127,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   </div>
   
 </header>
+<div class="authbar" id="authbar"><div><span class="authdot"></span><span id="authLabel">Not signed in</span></div><button class="authbtn" id="authOpen">Sign in</button></div>
 <nav><button class="nav active" data-page="mine">My List</button><button class="nav" data-page="top">Top 100</button></nav>
 
 <main>
@@ -155,6 +162,15 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="actions" id="searchActions"><button class="secondary" id="add">+ Add Course</button></div>
 </div></div>
 <div class="backdrop" id="addmodal"><div class="modal"><h3>Add a course</h3><div class="sub">Add anything that isn't in the pre-loaded lists.</div><div class="group"><label>Course Name</label><input id="newname" placeholder="Course name"></div><div class="group"><label>Location</label><input id="newloc" placeholder="City, State / Country"></div><div class="group"><label>Logo URL — optional</label><input id="newlogo" placeholder="https://..."></div><div class="actions"><button class="secondary" id="addclose">Cancel</button><button class="primary" id="save">Add & Log Round</button></div></div></div>
+<div class="backdrop" id="authmodal">
+<div class="modal authmodal">
+<div class="modalhead"><div><div class="eyebrow">Your account</div><h3 id="authTitle">Sign in</h3></div><button class="modalclose" id="authClose" aria-label="Close">×</button></div>
+<div class="sub" id="authSub">Sign in to keep your courses, rankings and rounds synced to your account.</div>
+<div class="group"><label>Email</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+<div class="group"><label>Password</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+<div class="autherror" id="authError"></div>
+<div class="actions"><button class="secondary" id="authToggle">Create account</button><button class="primary" id="authSubmit">Sign in</button></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -382,7 +398,64 @@ async function loadMichigan(){
 
 let state=JSON.parse(localStorage.getItem("theCourseBook")||'{"played":{},"myList":[]}');
 let filter="world",dragged=null,touchDrag=null;
+let currentUser=null, authMode="signin", syncing=false;
 const save=()=>localStorage.setItem("theCourseBook",JSON.stringify(state));
+const cloudCourseMap=new Map();
+function setAuthStatus(label,signedIn){
+  const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
+  if(a)a.textContent=label; if(b){b.textContent=signedIn?"Sign out":"Sign in"} if(d)d.style.background=signedIn?"#c7aa6b":"#9a7b3f";
+}
+async function ensureDbCourse(c){
+  if(!supabaseClient||!currentUser)return null;
+  if(cloudCourseMap.has(String(c.id)))return cloudCourseMap.get(String(c.id));
+  let {data,error}=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").eq("name",c.name).limit(5);
+  if(error)throw error;
+  let row=(data||[]).find(x=>{const loc=String(c.location||"").toLowerCase();return !loc||[x.city,x.state,x.country].filter(Boolean).join(", ").toLowerCase().includes(loc.split(",")[0])||String(x.city||"").toLowerCase().includes(loc.split(",")[0])});
+  if(!row){
+    const parts=String(c.location||"").split(",").map(x=>x.trim());
+    const city=parts[0]||null,stateVal=parts[1]||null,country=parts.slice(2).join(", ")|| (c.country||null);
+    const ins=await supabaseClient.from("courses").insert({name:c.name,city,state:stateVal,country,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
+    if(ins.error)throw ins.error; row={id:ins.data.id};
+  }
+  cloudCourseMap.set(String(c.id),row.id); return row.id;
+}
+async function loadCloudState(){
+  if(!supabaseClient||!currentUser)return;
+  const {data,error}=await supabaseClient.from("user_courses").select("course_id,times_played,personal_rank,first_played,last_played,notes").eq("user_id",currentUser.id).order("personal_rank",{ascending:true});
+  if(error)throw error;
+  if((data||[]).length){
+    const next={played:{},myList:[]};
+    for(const r of data){
+      const local=[...cloudCourseMap.entries()].find(([,dbid])=>dbid===r.course_id)?.[0];
+      if(local){next.played[local]=Number(r.times_played)||0;next.myList.push(local)}
+    }
+    // If course mapping is incomplete, preserve local state until sync resolves it.
+    if(next.myList.length) state=next;
+  }
+}
+async function syncCourseToCloud(id){
+  if(!supabaseClient||!currentUser)return;
+  const c=get(id); if(!c)return;
+  const dbid=await ensureDbCourse(c); if(!dbid)return;
+  const qty=count(id); const rank=Math.max(1,state.myList.indexOf(id)+1);
+  const payload={user_id:currentUser.id,course_id:dbid,times_played:qty,personal_rank:rank,updated_at:new Date().toISOString()};
+  const {error}=await supabaseClient.from("user_courses").upsert(payload,{onConflict:"user_id,course_id"});
+  if(error){
+    // Schema may not have a composite unique constraint; update then insert as fallback.
+    const u=await supabaseClient.from("user_courses").update(payload).eq("user_id",currentUser.id).eq("course_id",dbid);
+    if(u.error)throw u.error;
+    if(!u.data){const ins=await supabaseClient.from("user_courses").insert(payload);if(ins.error)throw ins.error;}
+  }
+}
+async function syncAllToCloud(){
+  if(!supabaseClient||!currentUser||syncing)return; syncing=true;
+  try{
+    const ids=[...new Set([...state.myList,...Object.keys(state.played)])];
+    for(const id of ids){if(count(id)>0||state.myList.includes(id))await syncCourseToCloud(id)}
+    localStorage.setItem("theCourseBookMigrated_"+currentUser.id,"1");
+  }catch(e){console.warn("Cloud sync failed",e);toast("Saved locally; cloud sync failed")}finally{syncing=false}
+}
+
 const get=id=>courses.find(c=>c.id==id);
 const count=id=>state.played[id]||0;
 const initials=n=>n.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
@@ -414,7 +487,7 @@ function renderMine(){
  el.ondragend=()=>{dragged=null;el.classList.remove("dragging");box.querySelectorAll(".rankrow.over").forEach(x=>x.classList.remove("over"))};
  el.ondragover=e=>{e.preventDefault();if(dragged!==c.id)el.classList.add("over")};
  el.ondragleave=()=>el.classList.remove("over");
- el.ondrop=e=>{e.preventDefault();el.classList.remove("over");if(dragged===c.id)return;moveCourse(dragged,c.id,e.clientY,el);save();renderMine();toast("Ranking updated")};
+ el.ondrop=e=>{e.preventDefault();el.classList.remove("over");if(dragged===c.id)return;moveCourse(dragged,c.id,e.clientY,el);save();renderMine();if(currentUser)syncAllToCloud();toast("Ranking updated")};
  addTouchDrag(el,box,c.id);
  box.appendChild(el)});
 }
@@ -520,11 +593,44 @@ function renderResults(){
 function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id);document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="How many rounds are you adding?";document.getElementById("modalsearch").value=c.name;document.getElementById("results").innerHTML="";document.getElementById("selectedCourseCard").innerHTML=`<strong>${c.name}</strong><small>${c.location}${existing?` · Already played ${existing}×`:""}</small>`;document.getElementById("quantityBox").style.display="block";document.getElementById("searchActions").style.display="none";document.getElementById("timesPlayed").value=1;setTimeout(()=>{document.getElementById("timesPlayed").focus();document.getElementById("timesPlayed").select()},50)}
 document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;const qty=Math.max(1,parseInt(document.getElementById("timesPlayed").value,10)||1);logRounds(selectedCourseId,qty)};
 document.getElementById("timesPlayed").addEventListener("focus",()=>{setTimeout(()=>document.getElementById("confirmLog").scrollIntoView({behavior:"smooth",block:"nearest"}),250)});
-function logRounds(id,qty){state.played[id]=count(id)+qty;if(!state.myList.includes(id))state.myList.push(id);save();modal.classList.remove("open");renderTop();renderMine();toast(`${qty} round${qty===1?"":"s"} added`)}
+async function logRounds(id,qty){
+  state.played[id]=count(id)+qty;if(!state.myList.includes(id))state.myList.push(id);save();
+  if(supabaseClient&&currentUser){
+    try{const dbid=await ensureDbCourse(get(id));await syncCourseToCloud(id);
+      const rows=Array.from({length:qty},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
+      const {error}=await supabaseClient.from("rounds").insert(rows);if(error)throw error;
+    }catch(e){console.warn(e);toast("Saved locally; cloud sync failed")}
+  }
+  modal.classList.remove("open");renderTop();renderMine();toast(`${qty} round${qty===1?"":"s"} added`)
+}
 document.getElementById("add").onclick=()=>{modal.classList.remove("open");addmodal.classList.add("open");document.getElementById("newname").focus()};
 document.getElementById("addclose").onclick=()=>addmodal.classList.remove("open");
-document.getElementById("save").onclick=()=>{let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim();if(!name)return toast("Enter a course name");let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};courses.push(c);state.played[c.id]=1;state.myList.push(c.id);save();addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";renderTop();renderMine();toast("Course added and round logged")};
+document.getElementById("save").onclick=async()=>{let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim();if(!name)return toast("Enter a course name");let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};courses.push(c);state.played[c.id]=1;state.myList.push(c.id);save();if(supabaseClient&&currentUser){try{const dbid=await ensureDbCourse(c);await syncCourseToCloud(c.id);await supabaseClient.from("rounds").insert({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()})}catch(e){console.warn(e)}}addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";renderTop();renderMine();toast("Course added and round logged")};
 
+</script>
+
+<script>
+const authmodal=document.getElementById("authmodal");
+document.getElementById("authOpen").onclick=async()=>{if(currentUser){await supabaseClient.auth.signOut();return}authMode="signin";updateAuthUI();authmodal.classList.add("open");setTimeout(()=>document.getElementById("authEmail").focus(),80)};
+document.getElementById("authClose").onclick=()=>authmodal.classList.remove("open");
+document.getElementById("authToggle").onclick=()=>{authMode=authMode==="signin"?"signup":"signin";updateAuthUI()};
+function updateAuthUI(){document.getElementById("authTitle").textContent=authMode==="signin"?"Sign in":"Create account";document.getElementById("authSubmit").textContent=authMode==="signin"?"Sign in":"Create account";document.getElementById("authToggle").textContent=authMode==="signin"?"Create account":"Back to sign in";document.getElementById("authError").textContent=""}
+document.getElementById("authSubmit").onclick=async()=>{
+ const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value; const err=document.getElementById("authError"); if(!email||password.length<6){err.textContent="Enter an email and a password of at least 6 characters.";return} err.textContent="";
+ try{let result=authMode==="signin"?await supabaseClient.auth.signInWithPassword({email,password}):await supabaseClient.auth.signUp({email,password});if(result.error)throw result.error;if(authMode==="signup"&&!result.data.session){err.textContent="Account created. Check your email to confirm it, then sign in.";return}authmodal.classList.remove("open")}catch(e){err.textContent=e.message||"Unable to sign in."}
+};
+if(supabaseClient){supabaseClient.auth.onAuthStateChange(async(_event,session)=>{currentUser=session?.user||null;if(currentUser){setAuthStatus(currentUser.email||"Signed in",true);try{await supabaseClient.from("profiles").upsert({id:currentUser.id,display_name:(currentUser.email||"").split("@")[0]},{onConflict:"id"});await migrateAndLoadCloud()}catch(e){console.warn("Cloud account load failed",e);toast("Could not load cloud data")}}else{setAuthStatus("Not signed in",false);}})}
+async function migrateAndLoadCloud(){
+ if(!currentUser)return;
+ try{
+   const {data,error}=await supabaseClient.from("user_courses").select("course_id,times_played,personal_rank").eq("user_id",currentUser.id).order("personal_rank",{ascending:true});if(error)throw error;
+   const hasCloud=(data||[]).length>0;
+   if(!hasCloud && !localStorage.getItem("theCourseBookMigrated_"+currentUser.id) && (state.myList.length||Object.keys(state.played).length)){await syncAllToCloud()}
+   // Build course map for existing cloud rows from course records.
+   for(const r of (data||[])){const cr=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").eq("id",r.course_id).maybeSingle();if(cr.data){const c=courses.find(x=>x.name.toLowerCase()===String(cr.data.name).toLowerCase())||mergeCourse({id:slugId(cr.data.name,[cr.data.city,cr.data.state,cr.data.country].filter(Boolean).join(", ")),name:cr.data.name,location:[cr.data.city,cr.data.state,cr.data.country].filter(Boolean).join(", "),country:cr.data.country||"USA",region:"custom",world:null,usa:null,michigan:null,logo:cr.data.logo_url||"",website:cr.data.website_url||""});cloudCourseMap.set(String(c.id),r.course_id)}}
+   await loadCloudState(); renderTop();renderMine();
+ }catch(e){console.warn(e)}
+}
 </script>
 
 <script>
