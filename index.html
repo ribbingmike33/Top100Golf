@@ -24,12 +24,12 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .label{text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);font-size:11px;margin:24px 0 10px}.list{display:flex;flex-direction:column;gap:7px}
 .row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
-.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:1;z-index:50;transform:translateY(-7px) scale(1.035) rotate(-1.5deg);background:var(--cream);border-color:var(--cream);color:#10281c;box-shadow:0 24px 50px rgba(0,0,0,.52),0 8px 18px rgba(0,0,0,.35);cursor:grabbing}.rankrow.dragging .handle,.rankrow.dragging .myrank,.rankrow.dragging .course,.rankrow.dragging .loc,.rankrow.dragging .count,.rankrow.dragging .count strong{color:#10281c!important}.rankrow.dragging .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.16);box-shadow:inset 0 0 0 2px rgba(199,170,107,.25)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}.roundslink{display:inline-flex;align-items:center;gap:3px;border:0;background:none;color:var(--cream);padding:0;margin:0;font:inherit;cursor:pointer;text-align:right}.roundslink strong{color:var(--cream);font-size:13px}.roundslink span{color:var(--muted);font-size:11px}.roundhistory-list{max-height:52vh;overflow:auto;margin:0 -2px 12px}.roundhistory-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.roundhistory-row:last-child{border-bottom:0}.roundhistory-date{font-size:13px;color:var(--cream)}.roundhistory-date small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.delete-round{border:1px solid rgba(180,90,90,.45);background:rgba(180,90,90,.08);color:#f0caca;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap}.deleteround-inline{border:0;background:none;color:#d9a7a7;padding:0 0 0 8px;margin:0;font-size:11px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.roundhistory-empty{text-align:center;color:var(--muted);padding:20px 0}
+.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:0!important;z-index:1;transform:none!important}.rankrow.drag-placeholder{display:grid;visibility:visible!important;min-height:73px;padding:10px 13px;border:2px dashed rgba(199,170,107,.65);border-radius:11px;background:rgba(199,170,107,.05);box-shadow:inset 0 0 0 1px rgba(199,170,107,.12);pointer-events:none}.drag-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none!important;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;border-radius:11px;background:#f4ecd8!important;border:2px solid #f4ecd8!important;color:#10281c!important;box-shadow:0 30px 70px rgba(0,0,0,.62),0 12px 24px rgba(0,0,0,.42);transform:scale(1.045);transform-origin:center center;will-change:transform,left,top}.drag-ghost *{color:#10281c!important}.drag-ghost .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)!important}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.10);box-shadow:inset 0 0 0 2px rgba(199,170,107,.30)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}.roundslink{display:inline-flex;align-items:center;gap:3px;border:0;background:none;color:var(--cream);padding:0;margin:0;font:inherit;cursor:pointer;text-align:right}.roundslink strong{color:var(--cream);font-size:13px}.roundslink span{color:var(--muted);font-size:11px}.roundhistory-list{max-height:52vh;overflow:auto;margin:0 -2px 12px}.roundhistory-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.roundhistory-row:last-child{border-bottom:0}.roundhistory-date{font-size:13px;color:var(--cream)}.roundhistory-date small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.delete-round{border:1px solid rgba(180,90,90,.45);background:rgba(180,90,90,.08);color:#f0caca;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap}.deleteround-inline{border:0;background:none;color:#d9a7a7;padding:0 0 0 8px;margin:0;font-size:11px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.roundhistory-empty{text-align:center;color:var(--muted);padding:20px 0}
 .rankactions{display:flex;gap:7px;margin-top:10px}.rankaction{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--cream);padding:9px 10px;border-radius:8px;font-size:12px;font-weight:700}.rankaction.primary-rank{background:var(--cream);color:var(--bg);border-color:var(--cream)}.rankmoveinput{width:100%;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:9px;color:var(--cream);padding:0 12px;font-size:18px;outline:0}.rankmovehint{font-size:12px;color:var(--muted);margin-top:6px}.rankmodal-course{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.035);margin-bottom:16px}.rankmodal-course strong{display:block;font-family:'Playfair Display';font-size:20px;color:var(--cream)}.rankmodal-course span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.course-option-section{margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.08)}.course-option-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}.course-option-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.course-option-buttons button{margin:0;min-height:42px}@media(max-width:760px){.rankactions{margin-top:8px}.rankaction{padding:10px 7px}}
 .empty{text-align:center;padding:65px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted)}.empty h3{font:600 25px 'Playfair Display';color:var(--cream);margin:0 0 7px}
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;padding:10px}.row .meta{display:none}.row .gold{white-space:nowrap;text-align:right;font-size:12px}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;padding:10px}.row .meta{display:none}.row .gold{white-space:nowrap;text-align:right;font-size:12px}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.drag-ghost{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}}
 
 @media(max-width:760px){
   body.mobile-searching{overflow-x:hidden}
@@ -589,7 +589,43 @@ function resolveRankedCourse(name,location,opts={}){
   return best&&bestScore>=threshold&&(bestScore-second>=0.035||bestScore>=0.84)?best:null;
 }
 
-let state=JSON.parse(localStorage.getItem("theCourseBook")||'{"played":{},"myList":[]}');
+const EMPTY_STATE={played:{},myList:[]};
+const LEGACY_STATE_KEY="theCourseBook";
+const USER_STATE_PREFIX="theCourseBook_user_";
+const LEGACY_OWNER_KEY="theCourseBookLegacyOwner";
+function cloneEmptyState(){return {played:{},myList:[]}}
+function readStoredState(key){
+  try{
+    const raw=localStorage.getItem(key);
+    if(!raw)return cloneEmptyState();
+    const parsed=JSON.parse(raw);
+    return {played:(parsed&&parsed.played&&typeof parsed.played==="object")?parsed.played:{},myList:Array.isArray(parsed?.myList)?parsed.myList:[]};
+  }catch(_){return cloneEmptyState()}
+}
+// IMPORTANT: My List is account-scoped. An authenticated user's local cache is
+// stored under that user's Supabase auth ID and can never be reused by another
+// account. The old pre-auth cache is migrated at most once, to the first account
+// that claims it, then removed so it cannot leak to a second account.
+let state=cloneEmptyState();
+let activeStateOwner=null;
+function activateUserState(userId){
+  if(!userId){state=cloneEmptyState();activeStateOwner=null;return}
+  const key=USER_STATE_PREFIX+String(userId);
+  let hasUserState=false;
+  try{hasUserState=localStorage.getItem(key)!==null}catch(_){ }
+  if(!hasUserState){
+    let legacyOwner=null;
+    try{legacyOwner=localStorage.getItem(LEGACY_OWNER_KEY)}catch(_){ }
+    if(!legacyOwner){
+      const legacy=readStoredState(LEGACY_STATE_KEY);
+      if(legacy.myList.length||Object.keys(legacy.played).length){
+        state=legacy;
+        try{localStorage.setItem(key,JSON.stringify(state));localStorage.setItem(LEGACY_OWNER_KEY,String(userId));localStorage.removeItem(LEGACY_STATE_KEY)}catch(_){ }
+      }else state=cloneEmptyState();
+    }else state=cloneEmptyState();
+  }else state=readStoredState(key);
+  activeStateOwner=String(userId);
+}
 let filter="world",dragged=null,touchDrag=null;
 // Runtime API -> Course Book mapping cache. The ranked course IDs are the
 // permanent identifiers inside this app; API IDs are only aliases for the
@@ -609,8 +645,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T16:45:00-04:00";
-const APP_VERSION="v55";
+const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
+const APP_VERSION="v59";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -620,7 +656,11 @@ function updateRefreshedDate(){
   if(Number.isNaN(d.getTime())){el.textContent="Last updated —";return;}
   el.textContent="Last updated " + d.toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}) + " · " + APP_VERSION;
 }
-const save=()=>{localStorage.setItem("theCourseBook",JSON.stringify(state));updateRefreshedDate();};
+const save=()=>{
+  const key=activeStateOwner?USER_STATE_PREFIX+activeStateOwner:LEGACY_STATE_KEY;
+  try{localStorage.setItem(key,JSON.stringify(state))}catch(_){ }
+  updateRefreshedDate();
+};
 const cloudCourseMap=new Map();
 function courseCountryFromLocation(location,country){
   const explicit=norm(country||"");
@@ -697,14 +737,10 @@ async function ensureDbCourse(c,apiMeta=null){
   }
   if(best&&bestScore>=.68){
     cloudCourseMap.set(String(c.id),String(best.id));
-    // Correct stale course metadata created by earlier versions (especially
-    // international courses that were incorrectly stored with country=USA).
-    const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
-    const desiredState=sourceCountry==="USA" ? ((locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null) : null;
-    const desiredCity=locParts.length ? locParts[0] : null;
-    const desiredCountry=sourceCountry||c.country||"USA";
-    const metadata={name:c.name,city:desiredCity,state:desiredState,country:desiredCountry,logo_url:c.logo||null,website_url:c.website||null};
-    try{await supabaseClient.from("courses").update(metadata).eq("id",best.id)}catch(_){ }
+    // IMPORTANT: merely logging/editing rounds must never rewrite the shared
+    // courses catalog. The existing catalog row is treated as immutable here.
+    // Course metadata changes should only happen through an explicit catalog
+    // edit, not as a side effect of loading, logging, or ranking.
     return String(best.id);
   }
 
@@ -791,18 +827,21 @@ async function loadCloudState(){
   }
   for(const [id,n] of roundCounts)next.played[id]=Math.max(next.played[id]||0,n);
 
-  const alreadyMigrated=!!localStorage.getItem("theCourseBookMigrated_"+currentUser.id);
-  if(!alreadyMigrated && rankRows.length){
+  // NEVER reorder an existing local list during hydration. personal_rank is
+  // metadata, not a sorting instruction. A course moves only after the user
+  // explicitly moves it in the app. If this is a genuinely new device with no
+  // local list yet, the cloud order is used once to establish the initial list.
+  const hadLocalOrder=state.myList.length>0;
+  if(!hadLocalOrder && rankRows.length){
     rankRows.sort((a,b)=>a.rank-b.rank);
     const ordered=[];
     for(const r of rankRows)if(!ordered.includes(r.id))ordered.push(r.id);
-    for(const id of next.myList)if(!ordered.includes(id))ordered.push(id);
     for(const id of Object.keys(next.played))if(next.played[id]>0&&!ordered.includes(id))ordered.push(id);
     next.myList=ordered;
   }else{
-    // Once the account has been migrated, local ranking order is authoritative.
-    // Cloud hydration may update play counts and add genuinely new courses, but
-    // it must never reshuffle courses back to stale personal_rank values.
+    // Existing local order is authoritative. Cloud hydration may update play
+    // counts and append genuinely new courses, but it can never move an existing
+    // course because of a personal_rank value in Supabase.
     for(const id of Object.keys(next.played))if(next.played[id]>0&&!next.myList.includes(id))next.myList.push(id);
   }
 
@@ -810,8 +849,8 @@ async function loadCloudState(){
   save();
   return true;
 }
-async function syncCourseToCloud(id){
-  if(!supabaseClient||!currentUser)return;
+async function syncCourseToCloud(id,{updateRank=false}={}){
+  if(!supabaseClient||!currentUser||activeStateOwner!==String(currentUser.id))return;
   const c=get(id); if(!c)return;
   const dbid=await ensureDbCourse(c); if(!dbid)return;
   const qty=count(id);
@@ -821,33 +860,45 @@ async function syncCourseToCloud(id){
     return;
   }
   const rank=Math.max(1,state.myList.indexOf(id)+1);
-  const payload={user_id:currentUser.id,course_id:dbid,times_played:qty,personal_rank:rank,updated_at:new Date().toISOString()};
-  // Do not rely on a composite UNIQUE constraint. The schema used by this app
-  // does not require one. First find an existing row, then update it; otherwise insert.
   const existing=await supabaseClient.from("user_courses")
-    .select("id").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
+    .select("id,personal_rank").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
   if(existing.error)throw existing.error;
-  if((existing.data||[]).length){
+  const rows=existing.data||[];
+  if(rows.length){
+    // Logging/deleting/editing rounds NEVER changes personal_rank. Only an
+    // explicit ranking action passes updateRank=true.
+    const payload={times_played:qty,updated_at:new Date().toISOString()};
+    if(updateRank)payload.personal_rank=rank;
     const u=await supabaseClient.from("user_courses")
       .update(payload).eq("user_id",currentUser.id).eq("course_id",dbid);
     if(u.error)throw u.error;
   }else{
-    const ins=await supabaseClient.from("user_courses").insert(payload);
+    // A new course gets its current local position when first created in the
+    // user's cloud list. Thereafter that rank is immutable unless the user moves it.
+    const ins=await supabaseClient.from("user_courses").insert({
+      user_id:currentUser.id,course_id:dbid,times_played:qty,personal_rank:rank,
+      updated_at:new Date().toISOString()
+    });
     if(ins.error)throw ins.error;
   }
 }
 let syncQueue=Promise.resolve();
+let syncQueueOwner=null;
 function syncAllToCloud(){
+  const requestedOwner=currentUser?.id||null;
+  if(syncQueueOwner!==requestedOwner){syncQueue=Promise.resolve();syncQueueOwner=requestedOwner}
   const run=async()=>{
-    if(!supabaseClient||!currentUser)return;
+    if(!supabaseClient||!currentUser||String(currentUser.id)!==String(requestedOwner))return;
+    if(activeStateOwner!==String(currentUser.id))return;
     const ids=[...new Set([...state.myList,...Object.keys(state.played)])];
-    for(const id of ids){if(count(id)>0||state.myList.includes(id))await syncCourseToCloud(id)}
+    // This function is used only for explicit ranking/migration operations.
+    // Normal round logging calls syncCourseToCloud() without updateRank.
+    for(const id of ids){if(count(id)>0||state.myList.includes(id))await syncCourseToCloud(id,{updateRank:true})}
     localStorage.setItem("theCourseBookMigrated_"+currentUser.id,"1");
   };
   syncQueue=syncQueue.then(run).catch(e=>{console.warn("Cloud sync failed",e);toast(e?.code==="COURSE_NOT_IN_CATALOG"?"Saved locally; course is not in cloud catalog":"Saved locally; cloud sync failed")});
   return syncQueue;
 }
-
 const get=id=>courses.find(c=>c.id==id);
 const count=id=>state.played[id]||0;
 const initials=n=>n.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
@@ -933,7 +984,7 @@ async function deleteLatestRound(courseId){
  }
  if(old<=1){delete state.played[courseId];state.myList=state.myList.filter(x=>x!==courseId)}else state.played[courseId]=old-1;
  save();
- if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId)}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
+ if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId,{updateRank:false})}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
  renderTop();renderMine();
  if(count(courseId)===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}
  toast("Round deleted");
@@ -949,7 +1000,7 @@ async function openRoundHistory(id){
 async function deleteRound(courseId,roundId,rowEl){
  if(!confirm("Delete this round?"))return;if(roundId&&supabaseClient&&currentUser){const {error}=await supabaseClient.from("rounds").delete().eq("id",roundId).eq("user_id",currentUser.id);if(error){console.warn("Round delete failed",error);toast("Could not delete round");return}}
  const old=count(courseId);if(old<=1){delete state.played[courseId];state.myList=state.myList.filter(x=>x!==courseId)}else state.played[courseId]=old-1;save();
- if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId)}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
+ if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId,{updateRank:false})}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
  if(rowEl)rowEl.remove();renderTop();renderMine();if(count(courseId)===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}document.getElementById("roundModalSub").textContent=`${count(courseId)} round${count(courseId)===1?"":"s"} logged`+(currentUser?" · Synced to your account":" · Stored on this device");toast("Round deleted")
 }
 document.getElementById("roundClose").onclick=()=>document.getElementById("roundmodal").classList.remove("open");document.getElementById("roundDone").onclick=()=>document.getElementById("roundmodal").classList.remove("open");document.getElementById("roundmodal").addEventListener("click",e=>{if(e.target.id==="roundmodal")document.getElementById("roundmodal").classList.remove("open")});
@@ -1021,23 +1072,98 @@ function moveCourse(dragId,targetId,pointerY,targetEl){
 }
 
 function addTouchDrag(el,box,id){
-  let dragging=false,active=false,timer=null,startY=0,mode=null;
+  let dragging=false,active=false,timer=null,startY=0,mode=null,touchId=null,ghost=null,placeholder=null,startIndex=-1,grabOffsetX=0,grabOffsetY=0;
   const handle=el.querySelector('.handle');
   const clear=()=>{if(timer){clearTimeout(timer);timer=null}};
   const clearOver=()=>box.querySelectorAll('.rankrow.over').forEach(x=>x.classList.remove('over'));
-  const finish=async commit=>{clear();if(dragging&&commit){save();if(currentUser)await syncAllToCloud();toast('Ranking updated')}dragging=false;active=false;mode=null;el.classList.remove('dragging');document.body.classList.remove('course-dragging');clearOver()};
-  const move=(x,y,ev)=>{if(!dragging)return;if(ev)ev.preventDefault();const target=document.elementFromPoint(x,y)?.closest('.rankrow');if(!target||!box.contains(target))return;const tid=target.dataset.id;if(tid===id){clearOver();return;}const r=target.getBoundingClientRect();const before=y<r.top+r.height/2;clearOver();target.classList.add('over');if(!moveCourse(id,tid,y,target))return;before?box.insertBefore(el,target):box.insertBefore(el,target.nextSibling);[...box.querySelectorAll('.rankrow')].forEach((row,i)=>{const n=row.querySelector('.myrank');if(n)n.textContent=i+1;});};
-  const begin=()=>{if(active)return;active=true;dragging=true;el.classList.add('dragging');document.body.classList.add('course-dragging');if(navigator.vibrate)navigator.vibrate(20)};
+  const cleanup=()=>{
+    clear();
+    if(ghost){ghost.remove();ghost=null}
+    if(placeholder){placeholder.remove();placeholder=null}
+    el.classList.remove('dragging');
+    document.body.classList.remove('course-dragging');
+    clearOver();
+    dragging=false;active=false;mode=null;touchId=null;
+  };
+  const updateGhost=(x,y)=>{if(!ghost)return;const r=el.getBoundingClientRect();ghost.style.width=r.width+'px';ghost.style.left=(x-grabOffsetX)+'px';ghost.style.top=(y-grabOffsetY)+'px'};
+  const placePlaceholder=(x,y)=>{
+    if(!placeholder)return;
+    const target=document.elementFromPoint(x,y)?.closest('.rankrow');
+    if(!target||target===el||target===placeholder||target.classList.contains('drag-placeholder')||!box.contains(target))return;
+    const r=target.getBoundingClientRect();
+    const before=y < r.top+r.height/2;
+    clearOver();target.classList.add('over');
+    if(before){
+      if(placeholder!==target.previousElementSibling)box.insertBefore(placeholder,target);
+    }else{
+      if(placeholder!==target.nextElementSibling)box.insertBefore(placeholder,target.nextSibling);
+    }
+  };
+  const begin=(x,y)=>{
+    if(active)return;
+    active=true;dragging=true;startIndex=[...box.querySelectorAll('.rankrow')].indexOf(el);
+    const er=el.getBoundingClientRect();grabOffsetX=x-er.left;grabOffsetY=y-er.top;
+    el.classList.add('dragging');
+    placeholder=document.createElement('div');placeholder.className='rankrow drag-placeholder';placeholder.setAttribute('aria-hidden','true');
+    box.insertBefore(placeholder,el.nextSibling);
+    ghost=el.cloneNode(true);ghost.classList.remove('rankrow','played-row','dragging');ghost.classList.add('drag-ghost');
+    document.body.appendChild(ghost);
+    updateGhost(x,y);
+    document.body.classList.add('course-dragging');
+    if(navigator.vibrate)navigator.vibrate(20);
+  };
+  const move=(x,y,ev)=>{
+    if(!dragging)return;
+    if(ev)ev.preventDefault();
+    updateGhost(x,y);
+    placePlaceholder(x,y);
+  };
+  const finish=async commit=>{
+    clear();
+    if(dragging&&commit&&placeholder){
+      if(currentUser&&activeStateOwner!==String(currentUser.id)){cleanup();return}
+      // Commit the final DOM position once, rather than mutating state on every
+      // finger movement. This eliminates the lag/oscillation on iPhone.
+      const rows=[...box.querySelectorAll('.rankrow')].filter(r=>r!==el);
+      const pos=rows.indexOf(placeholder);
+      if(pos>=0){
+        const order=rows.map(r=>r.dataset.id);
+        order.splice(pos,0,id);
+        state.myList=order.filter((x,i,a)=>x&&a.indexOf(x)===i);
+      }
+      save();renderTop();renderMine();
+      if(currentUser)await syncAllToCloud();
+      const newRank=state.myList.indexOf(id)+1;
+      toast(newRank===startIndex+1?'Ranking unchanged':`Moved to #${newRank}`);
+    }
+    cleanup();
+  };
   if(handle){
-    let touchId=null;
-    const cleanup=()=>{window.removeEventListener('touchmove',onMove,{passive:false});window.removeEventListener('touchend',onEnd,{passive:true});window.removeEventListener('touchcancel',onCancel,{passive:true});touchId=null};
-    const onMove=e=>{if(mode!=="touch"||touchId===null)return;const t=[...e.touches].find(x=>x.identifier===touchId);if(!t)return;if(!dragging){if(Math.abs(t.clientY-startY)>10)clear();return;}e.preventDefault();move(t.clientX,t.clientY,e);};
-    const onEnd=async()=>{if(mode==="touch")await finish(true);cleanup()};
-    const onCancel=async()=>{if(mode==="touch")await finish(false);cleanup()};
-    handle.addEventListener('touchstart',e=>{if(!e.touches?.length)return;const t=e.touches[0];mode="touch";touchId=t.identifier;startY=t.clientY;active=false;clear();timer=setTimeout(begin,180);window.addEventListener('touchmove',onMove,{passive:false});window.addEventListener('touchend',onEnd,{passive:true});window.addEventListener('touchcancel',onCancel,{passive:true});},{passive:true});
+    const onMove=e=>{
+      if(mode!=="touch"||touchId===null)return;
+      const t=[...e.touches].find(x=>x.identifier===touchId);if(!t)return;
+      if(!dragging){if(Math.abs(t.clientY-startY)>10){clear();return}}
+      if(!dragging&&Math.abs(t.clientY-startY)<=10)return;
+      if(!dragging)begin(t.clientX,t.clientY);
+      move(t.clientX,t.clientY,e);
+    };
+    const onEnd=async()=>{if(mode==="touch")await finish(true);window.removeEventListener('touchmove',onMove,{passive:false});window.removeEventListener('touchend',onEnd,{passive:true});window.removeEventListener('touchcancel',onCancel,{passive:true})};
+    const onCancel=async()=>{if(mode==="touch")await finish(false);window.removeEventListener('touchmove',onMove,{passive:false});window.removeEventListener('touchend',onEnd,{passive:true});window.removeEventListener('touchcancel',onCancel,{passive:true})};
+    handle.addEventListener('touchstart',e=>{
+      if(!e.touches?.length)return;const t=e.touches[0];mode="touch";touchId=t.identifier;startY=t.clientY;active=false;clear();
+      // The handle is a dedicated drag target; begin after a small movement.
+      window.addEventListener('touchmove',onMove,{passive:false});window.addEventListener('touchend',onEnd,{passive:true});window.addEventListener('touchcancel',onCancel,{passive:true});
+    },{passive:true});
   }
-  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.pointerType==='mouse'&&e.button!==0)return;if(e.target.closest('button,input,a'))return;mode='pointer';startY=e.clientY;active=false;clear();timer=setTimeout(begin,180);try{el.setPointerCapture(e.pointerId)}catch(_){} });
-  el.addEventListener('pointermove',e=>{if(mode!=='pointer')return;if(!dragging){if(Math.abs(e.clientY-startY)>10)clear();return;}move(e.clientX,e.clientY,e);},{passive:false});
+  el.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='touch')return;if(e.pointerType==='mouse'&&e.button!==0)return;if(e.target.closest('button,input,a'))return;
+    mode='pointer';startY=e.clientY;active=false;clear();try{el.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  el.addEventListener('pointermove',e=>{
+    if(mode!=='pointer')return;
+    if(!dragging){if(Math.abs(e.clientY-startY)<=8)return;begin(e.clientX,e.clientY)}
+    move(e.clientX,e.clientY,e);
+  },{passive:false});
   el.addEventListener('pointerup',async()=>{if(mode==='pointer')await finish(true)});
   el.addEventListener('pointercancel',async()=>{if(mode==='pointer')await finish(false)});
 }
@@ -1246,6 +1372,7 @@ function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id)
 document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;const qty=Math.max(1,parseInt(document.getElementById("timesPlayed").value,10)||1);logRounds(selectedCourseId,qty)};
 document.getElementById("timesPlayed").addEventListener("focus",()=>{syncVisibleViewport();setTimeout(()=>document.getElementById("confirmLog").scrollIntoView({behavior:"smooth",block:"nearest"}),250)});
 async function logRounds(id,qty){
+  if(currentUser&&activeStateOwner!==String(currentUser.id))return toast("Account is still connecting — try again");
   const raw=get(id);
   const apiMapped=raw&&apiCourseMap.get(String(raw.id)) ? get(apiCourseMap.get(String(raw.id))) : null;
   const mapped=apiMapped|| (raw?resolveRankedCourse(raw.name,raw.location,{strict:false}):null);
@@ -1260,7 +1387,7 @@ async function logRounds(id,qty){
     state.played[id]=count(id)+qty;
   }if(!state.myList.includes(id))state.myList.push(id);save();
   if(supabaseClient&&currentUser){
-    try{const dbid=await ensureDbCourse(get(id));await syncCourseToCloud(id);
+    try{const dbid=await ensureDbCourse(get(id));await syncCourseToCloud(id,{updateRank:false});
       const rows=Array.from({length:qty},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
       const {error}=await supabaseClient.from("rounds").insert(rows);if(error)throw error;
     }catch(e){console.warn(e);toast(e?.code==="COURSE_NOT_IN_CATALOG"?"Saved locally; course is not in cloud catalog":"Saved locally; cloud sync failed")}
@@ -1288,12 +1415,25 @@ document.getElementById("authSubmit").onclick=async()=>{
 if(supabaseClient){
   let cloudHydratedUserId=null;
   async function hydrateSignedInUser(session){
-    currentUser=session?.user||null;
-    if(!currentUser){
+    const nextUser=session?.user||null;
+    // Never allow one account's local list to remain active while another
+    // account is being hydrated. Switch the local cache first, then render.
+    if(!nextUser){
+      currentUser=null;
       cloudHydratedUserId=null;
+      syncQueue=Promise.resolve();syncQueueOwner=null;
+      activateUserState(null);
       setAuthStatus("Not signed in",false);
       renderTop();renderMine();
       return;
+    }
+    const changedUser=!currentUser||String(currentUser.id)!==String(nextUser.id);
+    currentUser=nextUser;
+    if(changedUser){
+      syncQueue=Promise.resolve();syncQueueOwner=String(currentUser.id);
+      cloudHydratedUserId=null;
+      activateUserState(currentUser.id);
+      renderTop();renderMine();
     }
     setAuthStatus(currentUser.email||"Signed in",true);
     if(cloudHydratedUserId===currentUser.id)return;
@@ -1335,7 +1475,8 @@ async function migrateAndLoadCloud(){
   const {data:cloudRows,error}=await supabaseClient.from("user_courses").select("course_id").eq("user_id",currentUser.id).limit(1);
   if(error)throw error;
   const hasCloud=(cloudRows||[]).length>0;
-  if(!hasCloud && !localStorage.getItem("theCourseBookMigrated_"+currentUser.id) && (state.myList.length||Object.keys(state.played).length)){
+  const migrationKey="theCourseBookMigrated_"+currentUser.id;
+  if(!hasCloud && !localStorage.getItem(migrationKey) && (state.myList.length||Object.keys(state.played).length)){
     await syncAllToCloud();
   }
   renderTop();renderMine();
