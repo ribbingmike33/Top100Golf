@@ -56,6 +56,18 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .bookmark svg{width:48px;height:38px;display:block}
 .brand b{font-size:28px !important;letter-spacing:-.8px !important}
 .brand b span{color:var(--gold)}
+
+.row.played-row,.rankrow.played-row{
+  border-color:rgba(199,170,107,.42);
+  background:linear-gradient(90deg,rgba(199,170,107,.12),rgba(199,170,107,.035));
+}
+.row.played-row .rank,.rankrow.played-row .myrank,
+.row.played-row .course,.rankrow.played-row .course,
+.row.played-row .played,.rankrow.played-row .count strong{color:var(--gold)}
+.row.played-row .logo,.rankrow.played-row .logo{
+  border-color:rgba(199,170,107,.65);
+  color:var(--gold);
+}
 </style>
 </head>
 <body>
@@ -80,19 +92,19 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   </div>
   <div class="avatar">MR</div>
 </header>
-<nav><button class="nav active" data-page="top">Top 100</button><button class="nav" data-page="mine">My List</button></nav>
+<nav><button class="nav active" data-page="mine">My List</button><button class="nav" data-page="top">Top 100</button></nav>
 
 <main>
-<section id="top" class="page active">
+<section id="top" class="page">
 <div class="hero">
 <div class="copy"><div class="eyebrow">The great courses</div><h1>Your Top 100 journey.</h1><p>Track the world's, America's and Michigan's greatest golf courses. See how many you've played and keep building your golf resume.</p></div>
-<div class="card"><div class="statlabel">World Top 100</div><div class="stat"><strong id="num">0</strong><span>/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
+<div class="card"><div class="statlabel">World Top 100</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
 </div>
 <div class="controls"><div class="seg" id="topseg"><button class="active" data-f="world">World</button><button data-f="usa">USA</button><button data-f="michigan">Michigan</button></div><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div>
 <div class="label">Top courses</div><div class="list" id="toplist"></div>
 </section>
 
-<section id="mine" class="page">
+<section id="mine" class="page active">
 <div class="listhead"><div><div class="eyebrow">Your courses</div><h2>My List</h2><p>Press and drag a course to change your ranking.</p></div><button class="primary" id="log">+ Log a Round</button></div>
 <div class="controls"><div class="seg"><button class="active">Played</button></div><div class="search"><span>⌕</span><input id="mysearch" placeholder="Search my courses..."></div></div>
 <div class="label">Personal ranking</div><div class="list" id="mylist"></div>
@@ -116,33 +128,26 @@ window.FAIRWAY_SUPABASE = supabaseClient;
 </script>
 <script>
 /* Course data
-   Michigan is loaded from OpenGolfAPI's complete Michigan course directory.
-   The USA list is the 2025 GolfDay Top 500 Public Courses.
-   World is built from the latest GOLF, Golf Digest and Top100GolfCourses lists
-   when the remote ranking pages are available; the app keeps a fallback list
-   so the UI still works if a ranking source is temporarily unavailable.
+   Course directory: OpenGolfAPI (all U.S. courses; Michigan currently ~837).
+   Rankings: Golf Digest 2025-26 for America and Michigan, and Golf Digest's
+   latest World's 100 Greatest (2024-25). Ranking pages are fetched at runtime.
 */
 const courses = [
 {id:"w1",name:"Pine Valley Golf Club",location:"Pine Valley, New Jersey",region:"usa",world:1,usa:1,michigan:null},
 {id:"w2",name:"Augusta National Golf Club",location:"Augusta, Georgia",region:"usa",world:2,usa:2,michigan:null},
-{id:"w3",name:"Royal County Down",location:"Newcastle, Northern Ireland",region:"world",world:3,usa:null,michigan:null},
-{id:"w4",name:"St Andrews — Old Course",location:"St Andrews, Scotland",region:"world",world:4,usa:null,michigan:null},
-{id:"w5",name:"Oakmont Country Club",location:"Oakmont, Pennsylvania",region:"usa",world:5,usa:3,michigan:null},
-{id:"w6",name:"Pebble Beach Golf Links",location:"Pebble Beach, California",region:"usa",world:6,usa:4,michigan:null},
-{id:"w7",name:"Cypress Point Club",location:"Pebble Beach, California",region:"usa",world:7,usa:5,michigan:null}
+{id:"w3",name:"Royal County Down",location:"Newcastle, Northern Ireland",region:"world",world:1,usa:null,michigan:null}
 ];
 
 const API_BASE = "https://api.opengolfapi.org/v1";
 const RANK_PROXY = "https://r.jina.ai/";
 const rankingUrls = {
-  usa: "https://golfday.us/blog/category/golf-course-rankings/",
-  worldGolf: "https://golf.com/top100courses/",
-  worldDigest: "https://www.golfdigest.com/story/worlds-100-greatest-golf-courses-2024-2025",
-  worldTop100: "https://www.top100golfcourses.com/golf-courses/world"
+  usa: "https://www.golfdigest.com/story/americas-100-greatest-golf-courses-ranking",
+  world: "https://www.golfdigest.com/story/worlds-100-greatest-golf-courses",
+  michigan: "https://www.golfdigest.com/courses/guides/michigan-best-golf-courses-rankings"
 };
 
 function normalizeCourseName(name){
-  return name.replace(/\s+/g," ").replace(/\u00a0/g," ").trim();
+  return String(name||"").replace(/\s+/g," ").replace(/\u00a0/g," ").trim();
 }
 function slugId(name, location=""){
   return "course-"+(name+"|"+location).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,120);
@@ -152,84 +157,130 @@ function mergeCourse(c){
     x.name.toLowerCase() === c.name.toLowerCase() &&
     (x.location||"").toLowerCase() === (c.location||"").toLowerCase()
   ) || courses.find(x => x.name.toLowerCase() === c.name.toLowerCase());
-  if(existing){ Object.assign(existing,c,{id:existing.id}); return existing; }
+  if(existing){
+    const keepId=existing.id;
+    Object.assign(existing,c,{id:keepId});
+    return existing;
+  }
   c.id=c.id||slugId(c.name,c.location); courses.push(c); return c;
 }
-function parseGolfDay(markdown){
-  const out=[];
-  const re=/\|\s*(\d+)\s*\|\s*(?:Public|Private)\s*\|\s*([^|]+)\|\s*([A-Z]{2})\s*\|/g;
+
+function parseGolfDigestRanking(markdown, type, maxRank){
+  const out=[], seen=new Set();
+  // Jina returns readable Markdown. Golf Digest rankings appear as headings:
+  // "##### 37. Forest Dunes Golf Club" or "##### 100. ...".
+  const re=/#####\s+(?:\(T-)?(\d{1,3})(?:\))?\.\s+([^\n]+?)(?:\s*\n+#{1,6}\s+([^\n]+))?/g;
   let m;
   while((m=re.exec(markdown))){
-    const rank=Number(m[1]), name=normalizeCourseName(m[2]), state=m[3];
-    if(rank>500) continue;
-    out.push({id:slugId(name,state),name,location:state,country:"USA",region:"usa",usa:rank,world:null,michigan:null});
+    const rank=Number(m[1]);
+    if(rank<1||rank>maxRank) continue;
+    let name=normalizeCourseName(m[2]).replace(/\s+\(.*?\)$/g,"");
+    if(!name || /rankings?|greatest|best golf courses/i.test(name)) continue;
+    // Location is normally the next heading line (e.g. "Roscommon, MI").
+    let loc=normalizeCourseName(m[3]||"");
+    if(!loc || loc.length>80) loc="";
+    const key=rank+"|"+name.toLowerCase();
+    if(seen.has(key)) continue;
+    seen.add(key);
+    out.push({id:slugId(name,loc),name,location:loc,region:type,world:null,usa:null,michigan:null});
   }
-  return out;
+  return out.sort((a,b)=>{
+    const ra=Number((a.id.match(/^course-/)||[])[0] ? 0 : 0); return 0;
+  });
 }
-function parseRankingPage(markdown, kind){
-  const out=[];
-  const patterns=[
-    /\|\s*(\d{1,3})\s*\|[^|]*\|\s*([^|]+)\|\s*([^|]+)\|/g,
-    /(?:^|\n)\s*(\d{1,3})\.\s+([^\n—–-]+?)(?:\s+[—–-]\s+|\s{2,})([^\n]+)$/gm
-  ];
-  for(const re of patterns){
-    let m;
-    while((m=re.exec(markdown))){
-      const rank=Number(m[1]); if(rank<1||rank>100) continue;
-      const name=normalizeCourseName(m[2]);
-      if(!name || /rank|course|location/i.test(name)) continue;
-      const loc=normalizeCourseName(m[3]||"");
-      out.push({id:slugId(name,loc),name,location:loc,region:"world",world:rank,usa:null,michigan:null});
-    }
-    if(out.length>=100) break;
-  }
-  return out.slice(0,100);
-}
-async function loadRankings(){
-  try{
-    const usaText=await fetch(RANK_PROXY+rankingUrls.usa).then(r=>r.text());
-    parseGolfDay(usaText).forEach(c=>mergeCourse(c));
-  }catch(e){ console.warn("USA ranking load failed",e); }
 
-  const worldLists=[];
-  for(const key of ["worldGolf","worldDigest","worldTop100"]){
-    try{
-      const txt=await fetch(RANK_PROXY+rankingUrls[key]).then(r=>r.text());
-      const list=parseRankingPage(txt,"world");
-      if(list.length) worldLists.push(list);
-    }catch(e){ console.warn("World ranking load failed",key,e); }
+function parseGolfDigestHeadingList(markdown, type, maxRank){
+  const out=[];
+  const lines=markdown.split(/\r?\n/);
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i].replace(/^[>*\s]+/,'');
+    const m=line.match(/^#{3,6}\s+(?:\(T-)?(\d{1,3})(?:\))?\.\s+(.+?)\s*$/);
+    if(!m) continue;
+    const rank=Number(m[1]);
+    if(rank<1||rank>maxRank) continue;
+    let name=normalizeCourseName(m[2]);
+    // Strip Golf Digest's tie/previous-rank annotations where present.
+    name=name.replace(/^\([^)]*\)\s*/,"").trim();
+    if(!name || /world's 100 greatest|america's 100 greatest/i.test(name)) continue;
+    let loc="";
+    for(let j=i+1;j<Math.min(i+5,lines.length);j++){
+      const candidate=normalizeCourseName(lines[j].replace(/^#+\s*/,""));
+      if(candidate && !candidate.startsWith("Image:") && /^[^\n]{2,70}$/.test(candidate) && /,\s*[A-Z]{2}(?:$|\s)/.test(candidate)) { loc=candidate; break; }
+      if(candidate && /,\s*(Scotland|England|Ireland|Wales|Australia|New Zealand|Japan|Canada|Mexico)/i.test(candidate)) { loc=candidate; break; }
+    }
+    const exists=out.find(x=>x.rank===rank);
+    if(!exists) out.push({rank,name,location:loc,region:type,world:null,usa:null,michigan:null});
   }
-  const byName=new Map();
-  worldLists.flat().forEach(c=>{
-    const key=c.name.toLowerCase();
-    const x=byName.get(key)||{...c,sources:[]};
-    x.sources.push(c.world);
-    x.world=Math.round(x.sources.reduce((a,b)=>a+b,0)/x.sources.length);
-    byName.set(key,x);
-  });
-  [...byName.values()].sort((a,b)=>a.world-b.world).slice(0,300).forEach((c,i)=>{
-    c.world=i+1;
-    mergeCourse(c);
-  });
+  return out.sort((a,b)=>a.rank-b.rank);
 }
+
+async function fetchRanking(url){
+  const res=await fetch(RANK_PROXY+url);
+  if(!res.ok) throw new Error("Ranking proxy "+res.status);
+  return res.text();
+}
+
+async function loadRankings(){
+  // Golf Digest America — 2025-26, exactly 100 courses.
+  try{
+    const text=await fetchRanking(rankingUrls.usa);
+    const list=parseGolfDigestHeadingList(text,"usa",100);
+    list.forEach(c=>mergeCourse({...c,usa:c.rank,world:null,michigan:null,id:slugId(c.name,c.location)}));
+    console.info("Golf Digest USA ranking loaded",list.length);
+  }catch(e){ console.warn("Golf Digest USA ranking load failed",e); }
+
+  // Golf Digest World — latest page available here is 2024-25, 100 courses outside USA.
+  try{
+    const text=await fetchRanking(rankingUrls.world);
+    const list=parseGolfDigestHeadingList(text,"world",100);
+    list.forEach(c=>mergeCourse({...c,world:c.rank,usa:null,michigan:null,id:slugId(c.name,c.location)}));
+    console.info("Golf Digest World ranking loaded",list.length);
+  }catch(e){ console.warn("Golf Digest World ranking load failed",e); }
+
+  // Golf Digest Best in State — Michigan currently has 40 ranked courses, not 100.
+  try{
+    const text=await fetchRanking(rankingUrls.michigan);
+    const list=parseGolfDigestHeadingList(text,"michigan",100);
+    list.forEach(c=>mergeCourse({...c,michigan:c.rank,world:null,usa:null,id:slugId(c.name,c.location)}));
+    console.info("Golf Digest Michigan ranking loaded",list.length); fillMichiganTo100();
+  }catch(e){ console.warn("Golf Digest Michigan ranking load failed",e); }
+}
+
+function fillMichiganTo100(){
+  const ranked=courses.filter(c=>Number.isInteger(c.michigan)&&c.michigan>=1&&c.michigan<=40);
+  const rankedIds=new Set(ranked.map(c=>c.id));
+  const candidates=courses.filter(c=>
+    !rankedIds.has(c.id) &&
+    String(c.location||"").toLowerCase().includes("michigan")
+  );
+  candidates.sort((a,b)=>a.name.localeCompare(b.name));
+  let next=41;
+  for(const c of candidates){
+    if(next>100) break;
+    if(!c.michigan) c.michigan=next++;
+  }
+  return next-1;
+}
+
 async function loadMichigan(){
   try{
     const res=await fetch(API_BASE+"/courses/state/MI");
     if(!res.ok) throw new Error("Michigan API "+res.status);
     const data=await res.json();
     const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
-    list.forEach((c,i)=>{
+    // IMPORTANT: OpenGolfAPI's state directory is alphabetical. Do NOT use its
+    // array order as a ranking. Michigan ranking comes only from Golf Digest above.
+    list.forEach(c=>{
       const name=normalizeCourseName(c.name||c.course_name||"Unnamed Course");
-      const city=normalizeCourseName(c.city||"Michigan");
-      const item=mergeCourse({
-        id:slugId(name,city),
-        name, location:city+", Michigan", country:"USA", region:"michigan",
-        world:null,usa:null,michigan:i+1,
-        logo:c.logo_url||c.logo||"",
-        website:c.website||c.website_url||""
+      const city=normalizeCourseName(c.city||"");
+      mergeCourse({
+        id:String(c.id||slugId(name,city)),name,
+        location:[city,"Michigan"].filter(Boolean).join(", "),
+        country:"USA",region:"michigan",world:null,usa:null,michigan:null,
+        logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""
       });
-      item.michigan=i+1;
     });
+    console.info("OpenGolfAPI Michigan directory loaded",list.length); fillMichiganTo100();
   }catch(e){ console.warn("Michigan course load failed",e); }
 }
 
@@ -249,18 +300,21 @@ function renderTop(){
  .sort((a,b)=>(a[filter==="world"?"world":filter==="usa"?"usa":"michigan"]||999)-(b[filter==="world"?"world":filter==="usa"?"usa":"michigan"]||999))
  .slice(0,100);
  let box=document.getElementById("toplist");box.innerHTML="";
- arr.forEach(c=>{let r=c[filter==="world"?"world":filter==="usa"?"usa":"michigan"];let p=count(c.id);let el=document.createElement("div");el.className="row";el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
+ arr.forEach(c=>{let r=c[filter==="world"?"world":filter==="usa"?"usa":"michigan"];let p=count(c.id);let el=document.createElement("div");el.className="row"+(p?" played-row":"");el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
  const rankKey=filter==="world"?"world":filter==="usa"?"usa":"michigan";
  let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
  document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA":"Michigan")+" Top 100";
- document.getElementById("num").textContent=played;
+ document.getElementById("num").textContent=played+" / 100";
  document.getElementById("fill").style.width=played+"%";
- document.getElementById("remain").textContent=(100-played)+" remaining";
+ const total=100;
+ document.getElementById("totalLabel").textContent="/ "+total+" played";
+ document.getElementById("fill").style.width=Math.min(100,(played/total)*100)+"%";
+ document.getElementById("remain").textContent=(total-played)+" remaining";
 }
 function renderMine(){
  let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map(get).filter(Boolean).filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
- arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow";el.draggable=true;el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong>${count(c.id)}×</strong><br>played</div>`;
+ arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow played-row";el.draggable=true;el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong>${count(c.id)}×</strong><br>played</div>`;
  el.ondragstart=()=>{dragged=c.id;el.classList.add("dragging")};el.ondragend=()=>{dragged=null;el.classList.remove("dragging")};el.ondragover=e=>{e.preventDefault();el.classList.add("over")};el.ondragleave=()=>el.classList.remove("over");el.ondrop=e=>{e.preventDefault();el.classList.remove("over");if(dragged===c.id)return;let a=state.myList.indexOf(dragged),b=state.myList.indexOf(c.id);state.myList.splice(a,1);state.myList.splice(b,0,dragged);save();renderMine();toast("Ranking updated")};box.appendChild(el)});
 }
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.page).classList.add("active");renderMine()});
@@ -276,7 +330,7 @@ let remoteSearchTimer=null;
 async function searchOpenGolf(q){
   q=q.trim(); if(q.length<2) return [];
   try{
-    const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=25`);
+    const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50`);
     if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
     const data=await res.json();
     const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
@@ -313,7 +367,11 @@ document.getElementById("save").onclick=()=>{let name=document.getElementById("n
 </script>
 
 <script>
-// Load the real course directories, then render.
+// Boot immediately so the app works from an iPhone Home Screen/PWA even when
+// an external ranking source is slow or unavailable. Network data fills in
+// progressively afterward.
+renderTop();
+renderMine();
 (async function(){
   await Promise.allSettled([loadMichigan(), loadRankings()]);
   renderTop();
