@@ -609,8 +609,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T16:15:00-04:00";
-const APP_VERSION="v51";
+const APP_BUILD_UPDATED_AT="2026-09-14T16:45:00-04:00";
+const APP_VERSION="v52";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
@@ -620,6 +620,43 @@ function updateRefreshedDate(){
 }
 const save=()=>{localStorage.setItem("theCourseBook",JSON.stringify(state));updateRefreshedDate();};
 const cloudCourseMap=new Map();
+function courseCountryFromLocation(location,country){
+  const explicit=norm(country||"");
+  if(explicit){
+    const e=explicit.replace(/\b(uk|u k)\b/g,"united kingdom");
+    if(/^(usa|us|united states|united states of america)$/.test(e))return "USA";
+    if(/scotland|england|wales|northern ireland|ireland|united kingdom|great britain/.test(e))return "UK";
+    if(/canada/.test(e))return "Canada";
+    if(/australia/.test(e))return "Australia";
+    if(/new zealand/.test(e))return "New Zealand";
+    if(/japan/.test(e))return "Japan";
+    if(/france/.test(e))return "France";
+    if(/spain/.test(e))return "Spain";
+    if(/mexico/.test(e))return "Mexico";
+    if(/dominican republic/.test(e))return "Dominican Republic";
+    if(/south korea|korea/.test(e))return "South Korea";
+    if(/bermuda/.test(e))return "Bermuda";
+    if(/singapore/.test(e))return "Singapore";
+    if(/south africa/.test(e))return "South Africa";
+    if(/netherlands/.test(e))return "Netherlands";
+  }
+  const l=norm(location||"");
+  if(/scotland|england|wales|northern ireland|ireland/.test(l))return "UK";
+  if(/canada/.test(l))return "Canada";
+  if(/australia/.test(l))return "Australia";
+  if(/new zealand/.test(l))return "New Zealand";
+  if(/japan/.test(l))return "Japan";
+  if(/france/.test(l))return "France";
+  if(/spain/.test(l))return "Spain";
+  if(/mexico/.test(l))return "Mexico";
+  if(/dominican republic/.test(l))return "Dominican Republic";
+  if(/south korea|korea/.test(l))return "South Korea";
+  if(/bermuda/.test(l))return "Bermuda";
+  if(/singapore/.test(l))return "Singapore";
+  if(/south africa/.test(l))return "South Africa";
+  if(/netherlands/.test(l))return "Netherlands";
+  return "USA";
+}
 function setAuthStatus(label,signedIn){
   const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
   if(a)a.textContent=label; if(b){b.textContent=signedIn?"Sign out":"Sign in"} if(d)d.style.background=signedIn?"#c7aa6b":"#9a7b3f";
@@ -636,10 +673,17 @@ async function ensureDbCourse(c,apiMeta=null){
     [apiMeta.name,apiMeta.course_name,apiMeta.courseName].filter(Boolean).forEach(x=>wantedNames.add(norm(x)));
   }
   const wantedLoc=norm(c.location||"");
+  const sourceCountry=courseCountryFromLocation(c.location,c.country);
+  const sourceIsInternational=sourceCountry && sourceCountry!=="USA";
   const {data,error}=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").limit(5000);
   if(error)throw error;
   let best=null,bestScore=0;
   for(const r of (data||[])){
+    const recordCountry=courseCountryFromLocation([r.city,r.state,r.country].filter(Boolean).join(", "),r.country);
+    // Never attach an international course to a USA course record merely
+    // because the names are similar. Location/country is part of identity.
+    if(sourceIsInternational && recordCountry!==sourceCountry)continue;
+    if(!sourceIsInternational && sourceCountry==="USA" && recordCountry!=="USA")continue;
     const names=[r.name].filter(Boolean).map(norm);
     if(names.some(n=>wantedNames.has(n))){best=r;bestScore=1;break;}
     const rn=norm(r.name), a=[...wantedNames].filter(Boolean).flatMap(x=>x.split(" ").filter(t=>t.length>1)), b=rn.split(" ").filter(x=>x.length>1);
@@ -651,6 +695,14 @@ async function ensureDbCourse(c,apiMeta=null){
   }
   if(best&&bestScore>=.68){
     cloudCourseMap.set(String(c.id),String(best.id));
+    // Correct stale course metadata created by earlier versions (especially
+    // international courses that were incorrectly stored with country=USA).
+    const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
+    const desiredState=sourceCountry==="USA" ? ((locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null) : null;
+    const desiredCity=locParts.length ? locParts[0] : null;
+    const desiredCountry=sourceCountry||c.country||"USA";
+    const metadata={name:c.name,city:desiredCity,state:desiredState,country:desiredCountry,logo_url:c.logo||null,website_url:c.website||null};
+    try{await supabaseClient.from("courses").update(metadata).eq("id",best.id)}catch(_){ }
     return String(best.id);
   }
 
@@ -658,9 +710,9 @@ async function ensureDbCourse(c,apiMeta=null){
   // shared Supabase catalog. Create it once (RLS must permit authenticated
   // inserts); afterwards all rounds use the same permanent UUID.
   const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
-  const stateGuess=(locParts[locParts.length-1]||"").length===2?locParts[locParts.length-1]:null;
+  const countryGuess=sourceCountry||c.country||"USA";
+  const stateGuess=countryGuess==="USA" && (locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null;
   const cityGuess=locParts.length>1?locParts[0]:null;
-  const countryGuess=locParts.length>2?locParts[locParts.length-1]:"USA";
   const ins=await supabaseClient.from("courses").insert({name:c.name,city:cityGuess,state:stateGuess,country:countryGuess,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
   if(ins.error)throw ins.error;
   cloudCourseMap.set(String(c.id),String(ins.data.id));
@@ -687,10 +739,16 @@ async function loadCloudState(){
     if(!db)return null;
     const loc=[db.city,db.state,db.country].filter(Boolean).join(", ");
     const n=norm(db.name);
-    // Explicit aliases handle common OpenGolfAPI naming variants for courses
-    // that are also in a ranked list. This keeps historical rounds attached
-    // to the ranked course instead of creating a second cloud-* course.
-    let c=resolveRankedCourse(db.name,loc,{strict:false});
+    const dbCountry=courseCountryFromLocation(loc,db.country);
+    // Only use the ranked catalog when the stored course is in the same
+    // country/region. This prevents Scotland/UK courses from being silently
+    // converted into similarly named USA courses during hydration.
+    let c=null;
+    const rankedCandidate=resolveRankedCourse(db.name,loc,{strict:false});
+    if(rankedCandidate){
+      const rankedCountry=courseCountryFromLocation(rankedCandidate.location,rankedCandidate.country);
+      if(rankedCountry===dbCountry)c=rankedCandidate;
+    }
     if(!c)c=byName.get(n)||null;
     if(!c){
       c=mergeCourse({id:`cloud-${db.id}`,name:db.name,location:loc||"Location not specified",country:db.country||"USA",
@@ -711,8 +769,10 @@ async function loadCloudState(){
     const c=resolveLocal(dbById.get(String(r.course_id)));
     if(!c)continue;
     const qty=Number(r.times_played)||0;
-    if(qty>0)next.played[c.id]=Math.max(next.played[c.id]||0,qty);
-    rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
+    if(qty>0){
+      next.played[c.id]=Math.max(next.played[c.id]||0,qty);
+      rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
+    }
   }
 
   const roundCounts=new Map();
@@ -742,7 +802,13 @@ async function syncCourseToCloud(id){
   if(!supabaseClient||!currentUser)return;
   const c=get(id); if(!c)return;
   const dbid=await ensureDbCourse(c); if(!dbid)return;
-  const qty=count(id); const rank=Math.max(1,state.myList.indexOf(id)+1);
+  const qty=count(id);
+  if(qty<=0 && !state.myList.includes(id)){
+    const del=await supabaseClient.from("user_courses").delete().eq("user_id",currentUser.id).eq("course_id",dbid);
+    if(del.error)throw del.error;
+    return;
+  }
+  const rank=Math.max(1,state.myList.indexOf(id)+1);
   const payload={user_id:currentUser.id,course_id:dbid,times_played:qty,personal_rank:rank,updated_at:new Date().toISOString()};
   // Do not rely on a composite UNIQUE constraint. The schema used by this app
   // does not require one. First find an existing row, then update it; otherwise insert.
@@ -758,13 +824,16 @@ async function syncCourseToCloud(id){
     if(ins.error)throw ins.error;
   }
 }
-async function syncAllToCloud(){
-  if(!supabaseClient||!currentUser||syncing)return; syncing=true;
-  try{
+let syncQueue=Promise.resolve();
+function syncAllToCloud(){
+  const run=async()=>{
+    if(!supabaseClient||!currentUser)return;
     const ids=[...new Set([...state.myList,...Object.keys(state.played)])];
     for(const id of ids){if(count(id)>0||state.myList.includes(id))await syncCourseToCloud(id)}
     localStorage.setItem("theCourseBookMigrated_"+currentUser.id,"1");
-  }catch(e){console.warn("Cloud sync failed",e);toast(e?.code==="COURSE_NOT_IN_CATALOG"?"Saved locally; course is not in cloud catalog":"Saved locally; cloud sync failed")}finally{syncing=false}
+  };
+  syncQueue=syncQueue.then(run).catch(e=>{console.warn("Cloud sync failed",e);toast(e?.code==="COURSE_NOT_IN_CATALOG"?"Saved locally; course is not in cloud catalog":"Saved locally; cloud sync failed")});
+  return syncQueue;
 }
 
 const get=id=>courses.find(c=>c.id==id);
@@ -920,21 +989,21 @@ function addTouchDrag(el,box,id){
   const handle=el.querySelector('.handle');
   const clear=()=>{if(timer){clearTimeout(timer);timer=null}};
   const clearOver=()=>box.querySelectorAll('.rankrow.over').forEach(x=>x.classList.remove('over'));
-  const finish=commit=>{clear();if(dragging&&commit){save();if(currentUser)syncAllToCloud();toast('Ranking updated')}dragging=false;active=false;mode=null;el.classList.remove('dragging');document.body.classList.remove('course-dragging');clearOver()};
+  const finish=async commit=>{clear();if(dragging&&commit){save();if(currentUser)await syncAllToCloud();toast('Ranking updated')}dragging=false;active=false;mode=null;el.classList.remove('dragging');document.body.classList.remove('course-dragging');clearOver()};
   const move=(x,y,ev)=>{if(!dragging)return;if(ev)ev.preventDefault();const target=document.elementFromPoint(x,y)?.closest('.rankrow');if(!target||!box.contains(target))return;const tid=target.dataset.id;if(tid===id){clearOver();return;}const r=target.getBoundingClientRect();const before=y<r.top+r.height/2;clearOver();target.classList.add('over');if(!moveCourse(id,tid,y,target))return;before?box.insertBefore(el,target):box.insertBefore(el,target.nextSibling);[...box.querySelectorAll('.rankrow')].forEach((row,i)=>{const n=row.querySelector('.myrank');if(n)n.textContent=i+1;});};
   const begin=()=>{if(active)return;active=true;dragging=true;el.classList.add('dragging');document.body.classList.add('course-dragging');if(navigator.vibrate)navigator.vibrate(20)};
   if(handle){
     let touchId=null;
     const cleanup=()=>{window.removeEventListener('touchmove',onMove,{passive:false});window.removeEventListener('touchend',onEnd,{passive:true});window.removeEventListener('touchcancel',onCancel,{passive:true});touchId=null};
     const onMove=e=>{if(mode!=="touch"||touchId===null)return;const t=[...e.touches].find(x=>x.identifier===touchId);if(!t)return;if(!dragging){if(Math.abs(t.clientY-startY)>10)clear();return;}e.preventDefault();move(t.clientX,t.clientY,e);};
-    const onEnd=()=>{if(mode==="touch")finish(true);cleanup()};
-    const onCancel=()=>{if(mode==="touch")finish(false);cleanup()};
+    const onEnd=async()=>{if(mode==="touch")await finish(true);cleanup()};
+    const onCancel=async()=>{if(mode==="touch")await finish(false);cleanup()};
     handle.addEventListener('touchstart',e=>{if(!e.touches?.length)return;const t=e.touches[0];mode="touch";touchId=t.identifier;startY=t.clientY;active=false;clear();timer=setTimeout(begin,180);window.addEventListener('touchmove',onMove,{passive:false});window.addEventListener('touchend',onEnd,{passive:true});window.addEventListener('touchcancel',onCancel,{passive:true});},{passive:true});
   }
   el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.pointerType==='mouse'&&e.button!==0)return;if(e.target.closest('button,input,a'))return;mode='pointer';startY=e.clientY;active=false;clear();timer=setTimeout(begin,180);try{el.setPointerCapture(e.pointerId)}catch(_){} });
   el.addEventListener('pointermove',e=>{if(mode!=='pointer')return;if(!dragging){if(Math.abs(e.clientY-startY)>10)clear();return;}move(e.clientX,e.clientY,e);},{passive:false});
-  el.addEventListener('pointerup',()=>{if(mode==='pointer')finish(true)});
-  el.addEventListener('pointercancel',()=>{if(mode==='pointer')finish(false)});
+  el.addEventListener('pointerup',async()=>{if(mode==='pointer')await finish(true)});
+  el.addEventListener('pointercancel',async()=>{if(mode==='pointer')await finish(false)});
 }
 
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
