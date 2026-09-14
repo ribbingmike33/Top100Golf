@@ -24,7 +24,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .label{text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);font-size:11px;margin:24px 0 10px}.list{display:flex;flex-direction:column;gap:7px}
 .row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
-.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:1;z-index:50;transform:translateY(-7px) scale(1.035) rotate(-1.5deg);background:var(--cream);border-color:var(--cream);color:#10281c;box-shadow:0 24px 50px rgba(0,0,0,.52),0 8px 18px rgba(0,0,0,.35);cursor:grabbing}.rankrow.dragging .handle,.rankrow.dragging .myrank,.rankrow.dragging .course,.rankrow.dragging .loc,.rankrow.dragging .count,.rankrow.dragging .count strong{color:#10281c!important}.rankrow.dragging .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.16);box-shadow:inset 0 0 0 2px rgba(199,170,107,.25)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}
+.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:1;z-index:50;transform:translateY(-7px) scale(1.035) rotate(-1.5deg);background:var(--cream);border-color:var(--cream);color:#10281c;box-shadow:0 24px 50px rgba(0,0,0,.52),0 8px 18px rgba(0,0,0,.35);cursor:grabbing}.rankrow.dragging .handle,.rankrow.dragging .myrank,.rankrow.dragging .course,.rankrow.dragging .loc,.rankrow.dragging .count,.rankrow.dragging .count strong{color:#10281c!important}.rankrow.dragging .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.16);box-shadow:inset 0 0 0 2px rgba(199,170,107,.25)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}.roundslink{display:inline-flex;align-items:center;gap:3px;border:0;background:none;color:var(--cream);padding:0;margin:0;font:inherit;cursor:pointer;text-align:right}.roundslink strong{color:var(--cream);font-size:13px}.roundslink span{color:var(--muted);font-size:11px}.roundhistory-list{max-height:52vh;overflow:auto;margin:0 -2px 12px}.roundhistory-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.roundhistory-row:last-child{border-bottom:0}.roundhistory-date{font-size:13px;color:var(--cream)}.roundhistory-date small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.delete-round{border:1px solid rgba(180,90,90,.45);background:rgba(180,90,90,.08);color:#f0caca;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap}.roundhistory-empty{text-align:center;color:var(--muted);padding:20px 0}
 .rankactions{display:flex;gap:7px;margin-top:10px}.rankaction{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--cream);padding:9px 10px;border-radius:8px;font-size:12px;font-weight:700}.rankaction.primary-rank{background:var(--cream);color:var(--bg);border-color:var(--cream)}.rankmoveinput{width:100%;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:9px;color:var(--cream);padding:0 12px;font-size:18px;outline:0}.rankmovehint{font-size:12px;color:var(--muted);margin-top:6px}.rankmodal-course{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.035);margin-bottom:16px}.rankmodal-course strong{display:block;font-family:'Playfair Display';font-size:20px;color:var(--cream)}.rankmodal-course span{display:block;color:var(--muted);font-size:12px;margin-top:3px}@media(max-width:760px){.rankactions{margin-top:8px}.rankaction{padding:10px 7px}}
 .empty{text-align:center;padding:65px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted)}.empty h3{font:600 25px 'Playfair Display';color:var(--cream);margin:0 0 7px}
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
@@ -213,7 +213,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 </div></div>
 <div class="backdrop" id="addmodal"><div class="modal"><h3>Add a course</h3><div class="sub">Add anything that isn't in the pre-loaded lists.</div><div class="group"><label>Course Name</label><input id="newname" placeholder="Course name"></div><div class="group"><label>Location</label><input id="newloc" placeholder="City, State / Country"></div><div class="group"><label>Logo URL — optional</label><input id="newlogo" placeholder="https://..."></div><div class="group"><label>Personal Rank — optional</label><input id="newrank" type="number" inputmode="numeric" min="1" step="1" placeholder="Leave blank for bottom"></div><div class="actions"><button class="secondary" id="addclose">Cancel</button><button class="primary" id="save">Add & Log Round</button></div></div></div>
 <div class="backdrop" id="rankmodal"><div class="modal"><div class="modalhead"><div><div class="eyebrow">Personal ranking</div><h3>Move Course</h3></div><button class="modalclose" id="rankClose" aria-label="Close">×</button></div><div class="rankmodal-course"><strong id="rankCourseName"></strong><span id="rankCourseLoc"></span></div><div id="rankChoose"><div class="actions" style="margin-top:0"><button class="secondary" id="moveTop">Move to Top</button><button class="primary" id="moveCustom">Move to…</button></div></div><div id="rankCustom" style="display:none"><div class="group"><label>Move to rank</label><input class="rankmoveinput" id="rankInput" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 5"><div class="rankmovehint">Enter any rank from 1 to the bottom. Other courses will shift automatically.</div></div><div class="actions"><button class="secondary" id="rankCancel">Cancel</button><button class="primary" id="rankSave">Move Course</button></div></div></div></div>
-<div class="backdrop" id="authmodal">
+<div class="backdrop" id="roundmodal"><div class="modal"><div class="modalhead"><div><div class="eyebrow">Round history</div><h3 id="roundModalTitle">Rounds</h3></div><button class="modalclose" id="roundClose" aria-label="Close">×</button></div><div class="sub" id="roundModalSub">Your logged rounds for this course.</div><div id="roundHistoryList" class="roundhistory-list"></div><div class="actions"><button class="secondary" id="roundDone">Done</button></div></div></div><div class="backdrop" id="authmodal">
 <div class="modal authmodal">
 <div class="modalhead"><div><div class="eyebrow">Your account</div><h3 id="authTitle">Sign in</h3></div><button class="modalclose" id="authClose" aria-label="Close">×</button></div>
 <div class="sub" id="authSub">Sign in to keep your courses, rankings and rounds synced to your account.</div>
@@ -609,8 +609,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T15:05:00-04:00";
-const APP_VERSION="v49";
+const APP_BUILD_UPDATED_AT="2026-09-14T16:15:00-04:00";
+const APP_VERSION="v51";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
@@ -825,13 +825,29 @@ document.getElementById('rankInput').addEventListener('keydown',e=>{if(e.key==='
 function renderMine(){
  let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map((id,idx)=>({c:get(id),idx})).filter(x=>x.c).filter(x=>x.c.name.toLowerCase().includes(q)||x.c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
- arr.forEach(({c,idx})=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${idx+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong id="count-${c.id}">${count(c.id)}×</strong><br>played<button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
+ arr.forEach(({c,idx})=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${idx+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><button class="roundslink" type="button" aria-label="View rounds" data-round-history="${c.id}"><strong id="count-${c.id}">${count(c.id)}×</strong><span> played</span></button><br><button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
  addTouchDrag(el,box,c.id);
  const edit=el.querySelector("[data-edit-count]");
  edit.onclick=e=>{e.preventDefault();e.stopPropagation();startCountEdit(c.id,el.querySelector(".count"));};
+ const history=el.querySelector("[data-round-history]"); history.onclick=e=>{e.preventDefault();e.stopPropagation();openRoundHistory(c.id);};
  el.addEventListener('click',e=>{if(e.target.closest('.handle,.editcount,button,input,a'))return;openRankModal(c.id)});
  box.appendChild(el)});
 }
+
+async function openRoundHistory(id){
+ const c=get(id);if(!c)return;const box=document.getElementById("roundHistoryList");
+ document.getElementById("roundModalTitle").textContent=c.name;document.getElementById("roundModalSub").textContent=`${count(id)} round${count(id)===1?"":"s"} logged`+(currentUser?" · Synced to your account":" · Stored on this device");box.innerHTML='<div class="roundhistory-empty">Loading rounds…</div>';document.getElementById("roundmodal").classList.add("open");
+ let rows=[];let cloudHistoryFailed=false;if(supabaseClient&&currentUser){try{const dbid=await ensureDbCourse(c);const {data,error}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false});if(error)throw error;rows=data||[]}catch(e){cloudHistoryFailed=true;console.warn("Round history load failed",e);box.innerHTML="<div class=\"roundhistory-empty\">Could not load your cloud rounds. Try again.</div>";toast("Could not load cloud round history")}}
+ if(cloudHistoryFailed)return;if(!rows.length)rows=Array.from({length:count(id)},(_,i)=>({id:null,played_at:null,localNumber:i+1}));box.innerHTML="";
+ rows.forEach((r,i)=>{const row=document.createElement("div");row.className="roundhistory-row";const date=r.played_at?new Date(r.played_at).toLocaleString([],{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}):`Round ${i+1}`;row.innerHTML=`<div class="roundhistory-date">${date}<small>${r.id?"Logged round":"Local round"}</small></div><button class="delete-round" type="button">Delete</button>`;row.querySelector(".delete-round").onclick=()=>deleteRound(id,r.id,row);box.appendChild(row)})
+}
+async function deleteRound(courseId,roundId,rowEl){
+ if(!confirm("Delete this round?"))return;if(roundId&&supabaseClient&&currentUser){const {error}=await supabaseClient.from("rounds").delete().eq("id",roundId).eq("user_id",currentUser.id);if(error){console.warn("Round delete failed",error);toast("Could not delete round");return}}
+ const old=count(courseId);if(old<=1){delete state.played[courseId];state.myList=state.myList.filter(x=>x!==courseId)}else state.played[courseId]=old-1;save();
+ if(supabaseClient&&currentUser){try{await syncCourseToCloud(courseId)}catch(e){console.warn("Round count sync failed",e);toast("Round deleted; cloud count update failed")}}
+ if(rowEl)rowEl.remove();renderTop();renderMine();if(count(courseId)===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}document.getElementById("roundModalSub").textContent=`${count(courseId)} round${count(courseId)===1?"":"s"} logged`+(currentUser?" · Synced to your account":" · Stored on this device");toast("Round deleted")
+}
+document.getElementById("roundClose").onclick=()=>document.getElementById("roundmodal").classList.remove("open");document.getElementById("roundDone").onclick=()=>document.getElementById("roundmodal").classList.remove("open");document.getElementById("roundmodal").addEventListener("click",e=>{if(e.target.id==="roundmodal")document.getElementById("roundmodal").classList.remove("open")});
 
 async function setPlayedCount(id,newQty){
   const qty=Math.max(0,Math.floor(Number(newQty)||0));
@@ -967,7 +983,16 @@ if(window.visualViewport){
 }
 window.addEventListener("resize",syncVisibleViewport);
 syncVisibleViewport();
-document.getElementById("log").onclick=()=>{modal.classList.add("open");syncVisibleViewport();document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";selectedCourseId=null;renderResults();setTimeout(()=>{syncVisibleViewport();document.getElementById("modalsearch").focus()},50)};
+let apiSearchSession=0;
+function resetLogSearchConnection(){
+  clearTimeout(remoteSearchTimer); remoteSearchTimer=null;
+  // Start a fresh live-search session each time the Log a Round modal opens.
+  // Keep the 6-hour Michigan directory cache; clearing it forced a large
+  // directory request every time and could produce 499/client-disconnect errors.
+  apiSearchSession=Date.now();
+  miDirectoryPromise=null;
+}
+document.getElementById("log").onclick=()=>{resetLogSearchConnection();modal.classList.add("open");syncVisibleViewport();document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";selectedCourseId=null;document.getElementById("results").style.display="flex";document.getElementById("results").innerHTML="";renderResults();setTimeout(()=>{syncVisibleViewport();document.getElementById("modalsearch").focus()},50)};
 document.getElementById("close").onclick=()=>modal.classList.remove("open");
 document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";document.getElementById("results").style.display="flex";document.getElementById("modalsearch").focus()};
 document.getElementById("modalsearch").oninput=()=>{syncVisibleViewport();renderResults()};
@@ -1018,7 +1043,7 @@ async function loadMichiganDirectory(){
         if(parsed && parsed.savedAt && Date.now()-parsed.savedAt<MI_CACHE_TTL && Array.isArray(parsed.courses)) return parsed.courses;
       }
     }catch(_){ }
-    const res=await fetch(`${API_BASE}/courses/state/MI`,{cache:"no-store"});
+    const res=await fetchOpenGolf(`${API_BASE}/courses/state/MI?_cb=${apiSearchSession}`);
     if(!res.ok) throw new Error(`OpenGolfAPI Michigan ${res.status}`);
     const data=await res.json();
     const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
@@ -1051,6 +1076,23 @@ function rankMichiganMatches(list,q){
   }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,25).map(x=>normalizeApiCourse(x.c,true));
 }
 
+async function fetchOpenGolf(url){
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const res=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json","X-Course-Book-Session":String(apiSearchSession)}});
+      if(res.ok)return res;
+      lastError=new Error(`OpenGolfAPI ${res.status}`);
+      if(![499,502,503,504].includes(res.status))throw lastError;
+      await new Promise(r=>setTimeout(r,250*(attempt+1)));
+    }catch(e){
+      lastError=e;
+      if(attempt===1)throw e;
+      await new Promise(r=>setTimeout(r,250*(attempt+1)));
+    }
+  }
+  throw lastError||new Error("OpenGolfAPI request failed");
+}
 async function searchOpenGolf(q){
   q=q.trim(); if(q.length<2) return [];
   const results=[];
@@ -1063,7 +1105,7 @@ async function searchOpenGolf(q){
   // a single Michigan result in the first 50 could prevent the full directory
   // lookup, hiding another Michigan course that was also a valid match.
   const genericPromise=(async()=>{
-    const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50`,{cache:"no-store"});
+    const res=await fetchOpenGolf(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50&_cb=${apiSearchSession}`);
     if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
     const data=await res.json();
     return Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
@@ -1089,7 +1131,7 @@ function renderResults(){
   if(q.length>=2){
     clearTimeout(remoteSearchTimer);
     remoteSearchTimer=setTimeout(async()=>{
-      const remote=await searchOpenGolf(q);
+      let remote=[];try{remote=await searchOpenGolf(q)}catch(e){console.warn("OpenGolfAPI search failed",e);return}
       const shown=new Set(local.map(c=>c.id));
       remote.filter(c=>!shown.has(c.id)).slice(0,10).forEach(c=>{let b=document.createElement("button");b.className="result";b.innerHTML=`<strong>${c.name}</strong><small>${c.location}</small>`;b.onclick=()=>selectCourse(c.id);box.appendChild(b)});
     },180);
@@ -1207,14 +1249,6 @@ renderMine();
   renderMine();
 })();
 
-(async function(){
-  const el=document.querySelector('.user-status, #userStatus, [data-user-status]');
-  if(!el || !supabaseClient) return;
-  try {
-    const { data } = await supabaseClient.auth.getSession();
-    el.textContent=data.session ? 'Connected' : 'Not signed in';
-  } catch(e) { el.textContent='Connection error'; }
-})();
 </script>
 </body>
 </html>
