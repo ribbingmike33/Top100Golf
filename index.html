@@ -186,7 +186,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="copy"><div class="eyebrow">The great courses</div><h1>Your Top 100 journey.</h1><p>Track the world's, America's and Michigan's greatest golf courses. See how many you've played and keep building your golf resume.</p></div>
 <div class="card"><div class="statlabel">World Top 100</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
 </div>
-<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="world">World</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="michigan">Michigan - All</button><button data-f="michiganPublic">Michigan - Public</button></div><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div>
+<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="michigan">Michigan - All</button><button data-f="michiganPublic">Michigan - Public</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="world">World</button></div><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div>
 <div class="label">Top courses</div><div class="list" id="toplist"></div>
 </section>
 
@@ -609,8 +609,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T15:00:00-04:00";
-const APP_VERSION="v48";
+const APP_BUILD_UPDATED_AT="2026-09-14T15:05:00-04:00";
+const APP_VERSION="v49";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
