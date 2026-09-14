@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -46,7 +46,6 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   body.mobile-searching .page.active .search span{left:14px;top:12px;font-size:20px}
   body.mobile-searching #top .hero,
   body.mobile-searching #top .label,
-  body.mobile-searching #mine .listhead,
   body.mobile-searching #mine .label{display:none}
   body.mobile-searching #top .controls,
   body.mobile-searching #mine .controls{margin-top:4px;margin-bottom:16px}
@@ -606,8 +605,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T12:50:00-04:00";
-const APP_VERSION="v40";
+const APP_BUILD_UPDATED_AT="2026-09-14T13:55:00-04:00";
+const APP_VERSION="v42";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
