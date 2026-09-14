@@ -259,17 +259,80 @@ async function ensureDbCourse(c){
 }
 async function loadCloudState(){
   if(!supabaseClient||!currentUser)return;
-  const {data,error}=await supabaseClient.from("user_courses").select("course_id,times_played,personal_rank,first_played,last_played,notes").eq("user_id",currentUser.id).order("personal_rank",{ascending:true});
-  if(error)throw error;
-  if((data||[]).length){
-    const next={played:{},myList:[]};
-    for(const r of data){
-      const local=[...cloudCourseMap.entries()].find(([,dbid])=>dbid===r.course_id)?.[0];
-      if(local){next.played[local]=Number(r.times_played)||0;next.myList.push(local)}
-    }
-    // If course mapping is incomplete, preserve local state until sync resolves it.
-    if(next.myList.length) state=next;
+
+  const [{data:userRows,error:userErr},{data:roundRows,error:roundErr}]=await Promise.all([
+    supabaseClient.from("user_courses").select("course_id,times_played,personal_rank,first_played,last_played,notes").eq("user_id",currentUser.id).order("personal_rank",{ascending:true}),
+    supabaseClient.from("rounds").select("course_id,played_at").eq("user_id",currentUser.id)
+  ]);
+  if(userErr)throw userErr;
+  if(roundErr)throw roundErr;
+
+  // IMPORTANT: app updates must never depend on the hardcoded course IDs matching
+  // the IDs used by older Supabase rows. Resolve every cloud course by its
+  // persistent database record/name, then map it onto the current static catalog.
+  const dbIds=[...new Set([...(userRows||[]).map(r=>r.course_id),...(roundRows||[]).map(r=>r.course_id)])].filter(Boolean);
+  const dbById=new Map();
+  if(dbIds.length){
+    const cr=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").in("id",dbIds);
+    if(cr.error)throw cr.error;
+    (cr.data||[]).forEach(c=>dbById.set(String(c.id),c));
   }
+
+  const key=(name,location="")=>`${String(name||"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}|${String(location||"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}`;
+  const byName=new Map(courses.map(c=>[key(c.name),c]));
+  const resolveLocal=(db)=>{
+    if(!db)return null;
+    const loc=[db.city,db.state,db.country].filter(Boolean).join(", ");
+    let c=byName.get(key(db.name));
+    if(!c){
+      const wanted=key(db.name,loc).split("|")[0];
+      c=courses.find(x=>key(x.name).split("|")[0]===wanted);
+    }
+    if(!c){
+      c=mergeCourse({
+        id:`cloud-${db.id}`,
+        name:db.name,
+        location:loc||"Location not specified",
+        country:db.country||"USA",
+        region:(String(db.state||"").toUpperCase()==="MI"?"michigan":"custom"),
+        world:null,usa:null,michigan:null,
+        logo:db.logo_url||"",website:db.website_url||""
+      });
+      byName.set(key(c.name),c);
+    }
+    cloudCourseMap.set(String(c.id),String(db.id));
+    return c;
+  };
+
+  const next={played:{},myList:[]};
+  const rankRows=[];
+  for(const r of (userRows||[])){
+    const c=resolveLocal(dbById.get(String(r.course_id)));
+    if(!c)continue;
+    const qty=Number(r.times_played)||0;
+    next.played[c.id]=Math.max(next.played[c.id]||0,qty);
+    rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
+  }
+
+  // Rounds are the authoritative historical record for play count. This also
+  // recovers rounds from older app versions that may not have had a matching
+  // user_courses row or may use a different local course ID.
+  const roundCounts=new Map();
+  for(const r of (roundRows||[])){
+    const c=resolveLocal(dbById.get(String(r.course_id)));
+    if(!c)continue;
+    roundCounts.set(c.id,(roundCounts.get(c.id)||0)+1);
+  }
+  for(const [id,n] of roundCounts) next.played[id]=Math.max(next.played[id]||0,n);
+
+  rankRows.sort((a,b)=>a.rank-b.rank);
+  for(const r of rankRows) if(!next.myList.includes(r.id))next.myList.push(r.id);
+  for(const id of Object.keys(next.played)) if(next.played[id]>0&&!next.myList.includes(id))next.myList.push(id);
+
+  // Never replace valid local data with an empty/incomplete cloud result.
+  // Only adopt the cloud state when we actually recovered something.
+  if(next.myList.length || Object.keys(next.played).length) state=next;
+  save();
 }
 async function syncCourseToCloud(id){
   if(!supabaseClient||!currentUser)return;
@@ -489,12 +552,13 @@ if(supabaseClient){supabaseClient.auth.onAuthStateChange(async(_event,session)=>
 async function migrateAndLoadCloud(){
  if(!currentUser)return;
  try{
-   const {data,error}=await supabaseClient.from("user_courses").select("course_id,times_played,personal_rank").eq("user_id",currentUser.id).order("personal_rank",{ascending:true});if(error)throw error;
-   const hasCloud=(data||[]).length>0;
-   if(!hasCloud && !localStorage.getItem("theCourseBookMigrated_"+currentUser.id) && (state.myList.length||Object.keys(state.played).length)){await syncAllToCloud()}
-   // Build course map for existing cloud rows from course records.
-   for(const r of (data||[])){const cr=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").eq("id",r.course_id).maybeSingle();if(cr.data){const c=courses.find(x=>x.name.toLowerCase()===String(cr.data.name).toLowerCase())||mergeCourse({id:slugId(cr.data.name,[cr.data.city,cr.data.state,cr.data.country].filter(Boolean).join(", ")),name:cr.data.name,location:[cr.data.city,cr.data.state,cr.data.country].filter(Boolean).join(", "),country:cr.data.country||"USA",region:"custom",world:null,usa:null,michigan:null,logo:cr.data.logo_url||"",website:cr.data.website_url||""});cloudCourseMap.set(String(c.id),r.course_id)}}
-   await loadCloudState(); renderTop();renderMine();
+   // Load the permanent cloud history first. This is deliberately read-only during startup.
+   // Never overwrite/delete cloud data as part of an HTML app update.
+   await loadCloudState();
+   const {data:cloudRows,error}=await supabaseClient.from("user_courses").select("course_id").eq("user_id",currentUser.id).limit(1);if(error)throw error;
+   const hasCloud=(cloudRows||[]).length>0;
+   if(!hasCloud && !localStorage.getItem("theCourseBookMigrated_"+currentUser.id) && (state.myList.length||Object.keys(state.played).length))await syncAllToCloud();
+   renderTop();renderMine();
  }catch(e){console.warn(e)}
 }
 </script>
