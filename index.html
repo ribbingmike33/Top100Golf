@@ -24,7 +24,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .label{text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);font-size:11px;margin:24px 0 10px}.list{display:flex;flex-direction:column;gap:7px}
 .row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
-.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab}.rankrow.dragging{opacity:.35;border-color:var(--gold)}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.08)}.handle{color:#617067;touch-action:none;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}
+.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab}.rankrow.dragging{opacity:.55;border-color:var(--gold)}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.08)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}
 .empty{text-align:center;padding:65px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted)}.empty h3{font:600 25px 'Playfair Display';color:var(--cream);margin:0 0 7px}
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
@@ -254,11 +254,33 @@ for(const c of courses){
   const pr=direct|| (aliasName?publicRankByName.get(aliasName):null) || (normalizedName?publicRankByName.get(normalizedName):null);
   if(pr)c.public=pr;
 }
-const publicExisting=new Set(courses.filter(c=>c.public).map(c=>publicRankByName.get(c.name)||c.public));
+/* Explicit cross-list canonicalization: one physical course record can carry
+   multiple rankings. This prevents an API round from becoming a duplicate
+   just because Golf Digest uses a slightly different public-list title. */
+const publicCanonicalByName=new Map([
+  ["Arcadia Bluffs Golf Club (Bluffs)","michigan11"],
+  ["Arcadia Bluffs South Course","michigan9"],
+  ["Forest Dunes Golf Club","michigan10"],
+  ["Pinehurst #2","usa32"],
+  ["Whistling Straits: Straits Course","usa26"],
+  ["Bethpage State Park: Black","usa38"],
+  ["TPC Sawgrass: Stadium","usa41"],
+  ["Kiawah Island Golf Resort: The Ocean Course","usa30"],
+  ["Bandon Dunes","usa44"],
+  ["Bandon Trails","usa61"],
+  ["Pebble Beach Golf Links","usa9"],
+  ["Pacific Dunes","usa23"],
+  ["Shadow Creek","usa24"],
+  ["Erin Hills Golf Course","usa49"]
+]);
+for(const [publicName,canonicalId] of publicCanonicalByName){
+  const rank=publicRankByName.get(publicName), c=courses.find(x=>x.id===canonicalId);
+  if(rank&&c)c.public=rank;
+}
+const publicExisting=new Set(courses.filter(c=>c.public).map(c=>c.public));
 for(const name of public100Names){
   const rank=publicRankByName.get(name);
   if(publicExisting.has(rank))continue;
-  const aliasSource=[...publicAliases.entries()].find(([,v])=>v===name);
   const id=`public${rank}`;
   courses.push({id,name,location:"United States",region:"usa",world:null,usa:null,public:rank,michigan:null});
 }
@@ -280,6 +302,55 @@ if(!courses.some(c=>c.michigan===100)) courses.push(staticMichigan100);
 const rankingLoaded={world:true,usa:true,michigan:true};
 async function loadRankings(){ return; }
 async function loadMichigan(){ return; }
+
+/* Permanent API -> Course Book ranking resolver.
+   IMPORTANT: this lives at global scope so Log a Round can use it too.
+   It considers ALL four ranking fields, including USA Public. */
+const courseNameNorm=x=>String(x||"").toLowerCase()
+  .replace(/&/g," and ").replace(/[’']/g,"")
+  .replace(/\b(number|no\.?|#)\s*(\d+)\b/g," $2 ")
+  .replace(/[^a-z0-9]+/g," ")
+  .replace(/\b(golf club|golf course|country club|golf links|golf resort|golf|club|course|the)\b/g," ")
+  .replace(/\s+/g," ").trim();
+const rankingAliasNames=new Map([
+  ["arcadia bluffs","michigan11"],["arcadia bluffs golf","michigan11"],["arcadia bluffs golf club","michigan11"],["arcadia bluffs the bluffs","michigan11"],["arcadia bluffs bluffs","michigan11"],
+  ["arcadia bluffs south","michigan9"],["arcadia bluffs south course","michigan9"],
+  ["forest dunes","michigan10"],["forest dunes golf","michigan10"],["forest dunes golf club","michigan10"],["forest dunes course","michigan10"],
+  ["pinehurst 2","usa32"],["pinehurst no 2","usa32"],["pinehurst number 2","usa32"],["pinehurst 4","usa80"],["pinehurst no 4","usa80"],["pinehurst number 4","usa80"],["pinehurst 10","public30"],["pinehurst no 10","public30"],["pinehurst number 10","public30"],
+  ["bethpage black","usa38"],["bethpage state park black","usa38"],
+  ["whistling straits straits","usa26"],["whistling straits straits course","usa26"],
+  ["blackwolf run river","public17"],["blackwolf run meadow valleys","public91"],
+  ["the loop black","public62"],["the loop red","public67"],
+  ["bay harbor golf club links quarry","public100"]
+]);
+const rankingLayoutWords=new Set(["north","south","east","west","old","new","black","red","championship","straits","irish","river","meadow","valleys","links","dunes","lakes","mountain","ridge","heather","quarry","tribute","fazio","smith","gailes","bear","wolverine","church","strand","stadium","ocean","shore","seaside","east","west"]);
+function rankedCourseRecords(){return courses.filter(c=>c.world||c.usa||c.public||c.michigan)}
+function resolveRankedCourse(name,location,opts={}){
+  const n=courseNameNorm(name); if(!n)return null;
+  const aliasId=rankingAliasNames.get(n);
+  if(aliasId){const a=courses.find(c=>c.id===aliasId);if(a)return a;}
+  const ranked=rankedCourseRecords();
+  const exact=ranked.find(c=>courseNameNorm(c.name)===n);
+  if(exact)return exact;
+  const nt=n.split(" ").filter(x=>x.length>1), loc=String(location||"").toLowerCase();
+  let best=null,bestScore=0,second=0;
+  for(const c of ranked){
+    const ct=courseNameNorm(c.name).split(" ").filter(x=>x.length>1), inter=nt.filter(x=>ct.includes(x));
+    if(!inter.length)continue;
+    let score=.56*(inter.length/nt.length)+.28*(inter.length/ct.length);
+    const cl=String(c.location||"").toLowerCase();
+    const locParts=loc.split(/[,:\s]+/).filter(x=>x.length>2);
+    if(locParts.some(x=>cl.includes(x)))score+=.08;
+    const nl=nt.filter(x=>rankingLayoutWords.has(x)), cll=ct.filter(x=>rankingLayoutWords.has(x));
+    if(nl.length||cll.length){
+      const same=nl.length===cll.length&&nl.every(x=>cll.includes(x));
+      if(!same)score-=.24;
+    }
+    if(score>bestScore){second=bestScore;bestScore=score;best=c;}else if(score>second)second=score;
+  }
+  const threshold=opts.strict?0.80:0.64;
+  return best&&bestScore>=threshold&&(bestScore-second>=0.025||bestScore>=0.86)?best:null;
+}
 
 let state=JSON.parse(localStorage.getItem("theCourseBook")||'{"played":{},"myList":[]}');
 let filter="world",dragged=null,touchDrag=null;
@@ -320,50 +391,6 @@ async function loadCloudState(){
     const cr=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").in("id",dbIds);
     if(cr.error)throw cr.error;
     (cr.data||[]).forEach(c=>dbById.set(String(c.id),c));
-  }
-
-  const norm=x=>String(x||"").toLowerCase()
-    .replace(/&/g," and ")
-    .replace(/['’]/g,"")
-    .replace(/[^a-z0-9]+/g," ")
-    .replace(/\b(golf club|golf course|country club|golf links|golf resort|the)\b/g," ")
-    .replace(/\s+/g," ").trim();
-  // Permanent mapping from API course names to the hardcoded ranking records.
-  // This is intentionally conservative: separate layouts at one club stay separate.
-  const courseAliases=new Map([
-    ["arcadia bluffs", "michigan11"],["arcadia bluffs golf", "michigan11"],["arcadia bluffs golf club", "michigan11"],["arcadia bluffs golf course", "michigan11"],["arcadia bluffs the bluffs", "michigan11"],["arcadia bluffs bluffs", "michigan11"],
-    ["arcadia bluffs south", "michigan9"],["arcadia bluffs south course", "michigan9"],
-    ["forest dunes", "michigan10"],["forest dunes golf", "michigan10"],["forest dunes golf club", "michigan10"],["forest dunes course", "michigan10"]
-  ]);
-  const byName=new Map();
-  courses.forEach(c=>{const n=norm(c.name);if(n&&!byName.has(n))byName.set(n,c)});
-  const layoutWords=new Set(["north","south","east","west","old","black","red","championship","links","dunes","lakes","mountain","ridge","heather","quarry","tribute","fazio","smith","gailes","bear","wolverine"]);
-  function rankingTokens(name){return norm(name).split(" ").filter(x=>x.length>1)}
-  function resolveRankedCourse(name,location,opts={}){
-    const n=norm(name); if(!n)return null;
-    const alias=courseAliases.get(n); if(alias)return courses.find(x=>x.id===alias)||null;
-    const exact=byName.get(n); if(exact)return exact;
-    const nt=rankingTokens(n), loc=String(location||"").toLowerCase();
-    let best=null,bestScore=0,second=0;
-    for(const c of courses){
-      if(!c.world&&!c.usa&&!c.michigan)continue;
-      const ct=rankingTokens(c.name);
-      const inter=nt.filter(x=>ct.includes(x));
-      if(!inter.length)continue;
-      let score=.58*(inter.length/nt.length)+.32*(inter.length/ct.length);
-      const cl=String(c.location||"").toLowerCase();
-      const locWords=loc.split(/[,\s]+/).filter(Boolean);
-      if(locWords.some(x=>x.length>2&&cl.includes(x)))score+=.06;
-      if(locWords.some(x=>x.length>4&&cl.includes(x)))score+=.08;
-      const ntLayouts=nt.filter(x=>layoutWords.has(x)), ctLayouts=ct.filter(x=>layoutWords.has(x));
-      if(ntLayouts.length||ctLayouts.length){
-        const same=ntLayouts.length===ctLayouts.length&&ntLayouts.every(x=>ctLayouts.includes(x));
-        if(!same)score-=.22;
-      }
-      if(score>bestScore){second=bestScore;bestScore=score;best=c;} else if(score>second)second=score;
-    }
-    const threshold=opts.strict?0.80:0.72;
-    return best&&bestScore>=threshold&&(bestScore-second>=.035||bestScore>=.88)?best:null;
   }
 
   function resolveLocal(db){
@@ -476,12 +503,7 @@ function renderTop(){
 function renderMine(){
  let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map(get).filter(Boolean).filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
- arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow played-row";el.draggable=true;el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong id="count-${c.id}">${count(c.id)}×</strong><br>played<button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
- el.ondragstart=()=>{dragged=c.id;el.classList.add("dragging")};
- el.ondragend=()=>{dragged=null;el.classList.remove("dragging");box.querySelectorAll(".rankrow.over").forEach(x=>x.classList.remove("over"))};
- el.ondragover=e=>{e.preventDefault();if(dragged!==c.id)el.classList.add("over")};
- el.ondragleave=()=>el.classList.remove("over");
- el.ondrop=e=>{e.preventDefault();el.classList.remove("over");if(dragged===c.id)return;moveCourse(dragged,c.id,e.clientY,el);save();renderMine();if(currentUser)syncAllToCloud();toast("Ranking updated")};
+ arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong id="count-${c.id}">${count(c.id)}×</strong><br>played<button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
  addTouchDrag(el,box,c.id);
  const edit=el.querySelector("[data-edit-count]");
  edit.onclick=e=>{e.preventDefault();e.stopPropagation();startCountEdit(c.id,el.querySelector(".count"));};
@@ -555,48 +577,87 @@ function moveCourse(dragId,targetId,pointerY,targetEl){
 }
 
 function addTouchDrag(el,box,id){
-  let holdTimer=null,dragging=false,startX=0,startY=0,lastTarget=null;
-  const clear=()=>{if(holdTimer){clearTimeout(holdTimer);holdTimer=null}};
-  const finish=()=>{
-    clear();
-    document.removeEventListener("pointermove",onMove,true);
-    document.removeEventListener("pointerup",finish,true);
-    document.removeEventListener("pointercancel",finish,true);
+  let timer=null,dragging=false,pointerId=null,startX=0,startY=0,lastTarget=null,mode=null;
+  const handle=el.querySelector('.handle');
+  const isTouchDevice=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+  const clearTimer=()=>{if(timer){clearTimeout(timer);timer=null}};
+  const clearOver=()=>box.querySelectorAll('.rankrow.over').forEach(x=>x.classList.remove('over'));
+  const finish=(commit=true)=>{
+    clearTimer();
+    if(pointerId!==null){try{el.releasePointerCapture(pointerId)}catch(e){}}
     if(dragging){
-      dragging=false;el.classList.remove("dragging");
-      box.querySelectorAll(".rankrow.over").forEach(x=>x.classList.remove("over"));
-      document.body.classList.remove("course-dragging");
-      save(); if(currentUser)syncAllToCloud(); toast("Ranking updated");
+      dragging=false;el.classList.remove('dragging');clearOver();document.body.classList.remove('course-dragging');
+      if(commit){save();if(currentUser)syncAllToCloud();toast('Ranking updated')}
     }
-    lastTarget=null;
+    pointerId=null;lastTarget=null;mode=null;
   };
-  const onMove=e=>{
+  const begin=()=>{
+    if(dragging)return;
+    dragging=true;el.classList.add('dragging');document.body.classList.add('course-dragging');
+    if(navigator.vibrate)navigator.vibrate(20);
+    if(mode==='pointer'&&pointerId!==null){try{el.setPointerCapture(pointerId)}catch(e){}}
+  };
+  const moveAt=(x,y,ev)=>{
     if(!dragging)return;
-    e.preventDefault();
-    const target=document.elementFromPoint(e.clientX,e.clientY)?.closest(".rankrow");
-    if(!target||target===el||!box.contains(target))return;
-    const targetId=target.dataset.id, r=target.getBoundingClientRect();
+    if(ev)ev.preventDefault();
+    const target=document.elementFromPoint(x,y)?.closest('.rankrow');
+    if(!target||!box.contains(target))return;
+    const targetId=target.dataset.id;
+    if(targetId===id){clearOver();lastTarget=null;return;}
+    const rect=target.getBoundingClientRect();
+    const before=y<rect.top+rect.height/2;
+    clearOver();target.classList.add('over');
     if(lastTarget===targetId)return;
-    const moved=moveCourse(id,targetId,e.clientY,target);
-    if(moved){
-      lastTarget=targetId;
-      if(e.clientY<r.top+r.height/2)box.insertBefore(el,target);else box.insertBefore(el,target.nextSibling);
-      [...box.querySelectorAll(".rankrow")].forEach((row,i)=>{const rank=row.querySelector(".myrank");if(rank)rank.textContent=i+1});
-    }
+    if(!moveCourse(id,targetId,y,target))return;
+    lastTarget=targetId;
+    if(before)box.insertBefore(el,target);else box.insertBefore(el,target.nextSibling);
+    [...box.querySelectorAll('.rankrow')].forEach((row,i)=>{const rank=row.querySelector('.myrank');if(rank)rank.textContent=i+1});
   };
-  el.addEventListener("pointerdown",e=>{
-    if(e.pointerType==="mouse"&&e.button!==0)return;
-    if(e.target.closest("button,input,a"))return;
-    startX=e.clientX;startY=e.clientY;dragging=false;lastTarget=null;clear();
-    holdTimer=setTimeout(()=>{
-      dragging=true;el.classList.add("dragging");document.body.classList.add("course-dragging");
-      document.addEventListener("pointermove",onMove,true);document.addEventListener("pointerup",finish,true);document.addEventListener("pointercancel",finish,true);
-      if(navigator.vibrate)navigator.vibrate(18);
-    },260);
+  // Desktop / trackpad pointer dragging: whole row.
+  el.addEventListener('pointerdown',e=>{
+    if(isTouchDevice && e.pointerType==='touch')return;
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    if(e.target.closest('button,input,a'))return;
+    mode='pointer';pointerId=e.pointerId;startX=e.clientX;startY=e.clientY;dragging=false;lastTarget=null;clearTimer();
+    timer=setTimeout(begin,180);
+  },{passive:true});
+  el.addEventListener('pointermove',e=>{
+    if(mode!=='pointer'||pointerId!==e.pointerId)return;
+    if(!dragging){if(Math.hypot(e.clientX-startX,e.clientY-startY)>10)clearTimer();return;}
+    moveAt(e.clientX,e.clientY,e);
   },{passive:false});
-  el.addEventListener("pointermove",e=>{if(!dragging&&(Math.abs(e.clientX-startX)>14||Math.abs(e.clientY-startY)>14))clear()},{passive:true});
-  el.addEventListener("pointercancel",finish);
+  el.addEventListener('pointerup',e=>{if(mode==='pointer'&&pointerId===e.pointerId)finish(true)});
+  el.addEventListener('pointercancel',e=>{if(mode==='pointer'&&pointerId===e.pointerId)finish(false)});
+
+  // iPhone/iPad touch fallback. Chrome on iPhone uses Apple's WebKit engine,
+  // so explicit Touch Events are used for maximum reliability.
+  if(handle){
+    let touchActive=false,touchId=null,touchStartX=0,touchStartY=0;
+    const touchBegin=()=>{if(touchActive)return;touchActive=true;mode='touch';begin()};
+    handle.addEventListener('touchstart',e=>{
+      if(!e.touches||!e.touches.length)return;
+      const t=e.touches[0];touchId=t.identifier;touchStartX=t.clientX;touchStartY=t.clientY;lastTarget=null;clearTimer();
+      timer=setTimeout(touchBegin,180);
+    },{passive:true});
+    handle.addEventListener('touchmove',e=>{
+      if(mode!=='touch'||!e.touches)return;
+      const t=[...e.touches].find(x=>x.identifier===touchId)||e.touches[0];
+      if(!dragging){
+        if(Math.hypot(t.clientX-touchStartX,t.clientY-touchStartY)>10)clearTimer();
+        return;
+      }
+      e.preventDefault();
+      moveAt(t.clientX,t.clientY,e);
+    },{passive:false});
+    const touchEnd=()=>{
+      if(mode==='touch')finish(true);
+      touchActive=false;touchId=null;
+    };
+    handle.addEventListener('touchend',touchEnd,{passive:true});
+    handle.addEventListener('touchcancel',()=>{if(mode==='touch')finish(false);touchActive=false;touchId=null},{passive:true});
+  }
 }
+
 
 
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
