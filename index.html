@@ -1,4 +1,4 @@
-l<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -11,7 +11,7 @@ l<!DOCTYPE html>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
 :root{--bg:#08160f;--panel:#0f2419;--panel2:#142d20;--cream:#f4f0e6;--muted:#8b998f;--gold:#c7aa6b;--line:rgba(255,255,255,.09);--green:#2d6245}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--cream);font-family:DM Sans,Arial,sans-serif}
+*{box-sizing:border-box}html{overflow-x:hidden}body{margin:0;background:var(--bg);color:var(--cream);font-family:DM Sans,Arial,sans-serif;overflow-x:hidden}
 button,input{font:inherit}.app{min-height:100vh;background:radial-gradient(circle at 85% 0,rgba(61,118,84,.18),transparent 32%),linear-gradient(145deg,#08160f,#0b1e14 65%,#10291d)}
 header{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:20;background:rgba(8,22,15,.88);backdrop-filter:blur(16px)}
 .brand{display:flex;align-items:center;gap:12px}.mark{width:38px;height:38px;border:1px solid rgba(199,170,107,.6);border-radius:50%;display:grid;place-items:center;color:var(--gold);font-size:16px}.brand b{font:600 22px 'Playfair Display';letter-spacing:-.4px}.brand b span{color:var(--gold)}
@@ -29,6 +29,33 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px 1fr 45px;gap:9px;padding:10px}.row .meta{display:none}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+@media(max-width:760px){
+  body.mobile-searching{overflow-x:hidden}
+  body.mobile-searching .page.active .controls{
+    position:relative;left:auto;right:auto;top:auto;z-index:2;
+    margin:0 0 16px;padding:0;
+    background:transparent;border:0;backdrop-filter:none;
+  }
+  body.mobile-searching .page.active .controls .seg{display:none}
+  body.mobile-searching .page.active .search{width:100%}
+  body.mobile-searching .page.active .search input{
+    height:48px;border-radius:12px;font-size:17px;padding-left:42px;
+    border-color:rgba(199,170,107,.55);
+  }
+  body.mobile-searching .page.active .search span{left:14px;top:12px;font-size:20px}
+  body.mobile-searching #top .hero,
+  body.mobile-searching #top .label,
+  body.mobile-searching #mine .listhead,
+  body.mobile-searching #mine .label{display:none}
+  body.mobile-searching #top .controls,
+  body.mobile-searching #mine .controls{margin-top:4px;margin-bottom:16px}
+  body.mobile-searching #toplist,
+  body.mobile-searching #mylist{padding-top:0}
+  body.mobile-searching .row{min-height:68px;padding:9px 10px}
+  body.mobile-searching .course{font-size:15px}
+  body.mobile-searching .list{padding-bottom:30px}
+}
 
 .authbar{max-width:1080px;margin:10px auto 0;padding:0 22px;display:flex;justify-content:flex-end;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
 .authbar>div{display:flex;align-items:center;gap:7px}.authdot{width:7px;height:7px;border-radius:50%;background:#9a7b3f;display:inline-block}
@@ -216,7 +243,11 @@ function mergeCourse(c){
   ) || courses.find(x => x.name.toLowerCase() === c.name.toLowerCase());
   if(existing){
     const keepId=existing.id;
-    Object.assign(existing,c,{id:keepId});
+    const incoming={...c};
+    ["world","usa","michigan"].forEach(k=>{
+      if(incoming[k]==null && existing[k]!=null) delete incoming[k];
+    });
+    Object.assign(existing,incoming,{id:keepId});
     return existing;
   }
   c.id=c.id||slugId(c.name,c.location); courses.push(c); return c;
@@ -273,15 +304,31 @@ function parseGolfDigestHeadingList(markdown, type, maxRank){
 }
 
 
+function stripHtmlForRanking(html){
+  try{
+    const doc=new DOMParser().parseFromString(String(html||""),"text/html");
+    return [...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")]
+      .map(h=>h.textContent.replace(/\\s+/g," ").trim())
+      .filter(Boolean)
+      .join("\\n");
+  }catch(e){ return String(html||""); }
+}
 async function fetchRanking(url){
-  const candidates=[RANK_PROXY+url, RANK_PROXY+url.replace(/^https:\/\//,"http://")];
+  const encoded=encodeURIComponent(url);
+  const candidates=[
+    RANK_PROXY+"http://"+url.replace(/^https?:\/\//,""),
+    RANK_PROXY+url,
+    "https://api.allorigins.win/raw?url="+encoded,
+    "https://corsproxy.io/?url="+encoded
+  ];
   let lastErr=null;
   for(const endpoint of candidates){
     try{
-      const res=await fetch(endpoint,{cache:"no-store"});
+      const res=await fetch(endpoint,{cache:"no-store",headers:{"Accept":"text/plain,text/html,*/*"}});
       if(!res.ok) throw new Error("Ranking proxy "+res.status);
-      const text=await res.text();
-      if(text && /\b\d{1,3}\.\s+/.test(text)) return text;
+      const raw=await res.text();
+      const text=/<html|<h[1-6][\\s>]/i.test(raw)?stripHtmlForRanking(raw):raw;
+      if(text && /(?:T-)?\\d{1,3}\\.\\s+/.test(text)) return text;
       throw new Error("Ranking response did not contain rank entries");
     }catch(e){ lastErr=e; }
   }
@@ -297,7 +344,7 @@ async function loadRankings(){
         const text=await fetchRanking(rankingUrls.usa);
         const list=parseGolfDigestHeadingList(text,"usa",100);
         if(list.length<80) throw new Error("Only parsed "+list.length+" USA courses");
-        list.forEach(c=>mergeCourse({...c,usa:c.rank,world:null,michigan:null,id:slugId(c.name,c.location)}));
+        list.forEach(c=>mergeCourse({...c,usa:c.rank,id:slugId(c.name,c.location)}));
         console.info("Golf Digest USA ranking loaded",list.length);
       }catch(e){ console.warn("Golf Digest USA ranking load failed",e); }
     })(),
@@ -306,7 +353,7 @@ async function loadRankings(){
         const text=await fetchRanking(rankingUrls.world);
         const list=parseGolfDigestHeadingList(text,"world",100);
         if(list.length<80) throw new Error("Only parsed "+list.length+" World courses");
-        list.forEach(c=>mergeCourse({...c,world:c.rank,usa:null,michigan:null,id:slugId(c.name,c.location)}));
+        list.forEach(c=>mergeCourse({...c,world:c.rank,id:slugId(c.name,c.location)}));
         console.info("Golf Digest World ranking loaded",list.length);
       }catch(e){ console.warn("Golf Digest World ranking load failed",e); }
     })(),
@@ -315,7 +362,7 @@ async function loadRankings(){
         const text=await fetchRanking(rankingUrls.michigan);
         const list=parseGolfDigestHeadingList(text,"michigan",100);
         if(list.length<35) throw new Error("Only parsed "+list.length+" Michigan courses");
-        list.forEach(c=>mergeCourse({...c,michigan:c.rank,world:null,usa:null,id:slugId(c.name,c.location)}));
+        list.forEach(c=>mergeCourse({...c,michigan:c.rank,id:slugId(c.name,c.location)}));
         console.info("Golf Digest Michigan ranking loaded",list.length);
       }catch(e){ console.warn("Golf Digest Michigan ranking load failed",e); }
       fillMichiganTo100();
@@ -387,7 +434,7 @@ async function loadMichigan(){
       mergeCourse({
         id:String(c.id||slugId(name,city)),name,
         location:[city,"Michigan"].filter(Boolean).join(", "),
-        country:"USA",region:"michigan",world:null,usa:null,michigan:null,
+        country:"USA",region:"michigan",
         logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""
       });
     });
@@ -550,9 +597,37 @@ function addTouchDrag(el,box,id){
   el.addEventListener("touchend",end,{passive:true});
   el.addEventListener("touchcancel",end,{passive:true});
 }
-document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.page).classList.add("active");renderMine()});
-document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.f;renderTop()});
-document.getElementById("topsearch").oninput=renderTop;document.getElementById("mysearch").oninput=renderMine;
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");document.getElementById(b.dataset.page).classList.add("active");
+  document.getElementById("topsearch").blur();document.getElementById("mysearch").blur();exitMobileSearch();
+  renderTop();renderMine();
+});
+document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");filter=b.dataset.f;
+  const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();renderTop();
+});
+function enterMobileSearch(input){
+  if(window.matchMedia("(max-width:760px)").matches){
+    document.body.classList.add("mobile-searching");
+    setTimeout(()=>window.scrollTo(0,0),0);
+  }
+}
+function exitMobileSearch(){
+  if(window.matchMedia("(max-width:760px)").matches) document.body.classList.remove("mobile-searching");
+}
+document.getElementById("topsearch").onfocus=e=>enterMobileSearch(e.target);
+document.getElementById("mysearch").onfocus=e=>enterMobileSearch(e.target);
+document.getElementById("topsearch").oninput=renderTop;
+document.getElementById("mysearch").oninput=renderMine;
+document.getElementById("topsearch").onkeydown=e=>{if(e.key==="Escape"){e.target.blur();exitMobileSearch()}};
+document.getElementById("mysearch").onkeydown=e=>{if(e.key==="Escape"){e.target.blur();exitMobileSearch()}};
+document.getElementById("topsearch").onblur=()=>setTimeout(exitMobileSearch,120);
+document.getElementById("mysearch").onblur=()=>setTimeout(exitMobileSearch,120);
+// Never leave an invisible/off-screen field focused on initial load.
+window.addEventListener("load",()=>{document.querySelectorAll("input").forEach(i=>{if(i!==document.activeElement)i.blur()});exitMobileSearch()});
 const modal=document.getElementById("modal"),addmodal=document.getElementById("addmodal");
 let selectedCourseId=null;
 document.getElementById("log").onclick=()=>{modal.classList.add("open");document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";selectedCourseId=null;renderResults();setTimeout(()=>document.getElementById("modalsearch").focus(),50)};
