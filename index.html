@@ -496,14 +496,45 @@ const courseNameNorm=x=>String(x||"").toLowerCase()
 const norm=x=>courseNameNorm(x);
 const normalizeCourseName=x=>String(x||"").trim().replace(/\s+/g," ");
 const slugId=(name,location)=>`api-${courseNameNorm(name)}-${courseNameNorm(location)}`.replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+// Canonical locations for known international courses. These are identity data,
+// not ranking data, and must never be inferred as USA just because a cloud row
+// has an empty/incorrect country field.
+const canonicalCourseLocations=new Map([
+  [norm("Balcomie Links"),"Anstruther, Fife, Scotland"],
+  [norm("Kilspindie Golf Club"),"Aberlady, East Lothian, Scotland"],
+  [norm("Dunbar Golf Club"),"Dunbar, East Lothian, Scotland"],
+  [norm("St. Andrews Links: Jubilee"),"St Andrews, Fife, Scotland"],
+  [norm("The Glen"),"North Berwick, East Lothian, Scotland"]
+]);
+const COURSE_META_CACHE_KEY="theCourseBookCourseMetaV1";
+let courseMetaCache={};
+try{const raw=localStorage.getItem(COURSE_META_CACHE_KEY);const parsed=raw?JSON.parse(raw):{};if(parsed&&typeof parsed==="object")courseMetaCache=parsed}catch(_){ }
+function cacheCourseMeta(c){
+  if(!c||!c.name||String(c.id).startsWith("cloud-"))return;
+  const key=norm(c.name)+"|"+norm(c.location||"");
+  courseMetaCache[key]={id:String(c.id),name:c.name,location:c.location||"",country:c.country||"",region:c.region||"",world:c.world??null,usa:c.usa??null,michigan:c.michigan??null,public:c.public??null,michiganPublic:c.michiganPublic??null,logo:c.logo||"",website:c.website||""};
+  try{localStorage.setItem(COURSE_META_CACHE_KEY,JSON.stringify(courseMetaCache))}catch(_){ }
+}
+function cachedCourseMeta(name,location,country){
+  const n=norm(name),loc=norm(location||""),co=norm(country||"");
+  const exact=courseMetaCache[n+"|"+loc];
+  if(exact)return exact;
+  for(const v of Object.values(courseMetaCache)){
+    if(norm(v?.name)!==n)continue;
+    const vc=courseCountryFromLocation(v?.location,v?.country);
+    const dc=courseCountryFromLocation(location,country);
+    if(vc===dc && (!co || vc!=="USA" || dc==="USA"))return v;
+  }
+  return null;
+}
 const byName=new Map();
 const mergeCourse=c=>{
   const existing=courses.find(x=>String(x.id)===String(c.id));
-  if(existing){Object.assign(existing,{...c,id:existing.id});return existing;}
+  if(existing){Object.assign(existing,{...c,id:existing.id});cacheCourseMeta(existing);return existing;}
   const nn=norm(c.name);
   const same=courses.find(x=>norm(x.name)===nn && (!c.location || !x.location || norm(x.location)===norm(c.location)));
-  if(same){Object.assign(same,{...c,id:same.id});return same;}
-  courses.push(c); if(nn)byName.set(nn,c); return c;
+  if(same){Object.assign(same,{...c,id:same.id});cacheCourseMeta(same);return same;}
+  courses.push(c); if(nn)byName.set(nn,c); cacheCourseMeta(c); return c;
 };
 for(const c of courses){const nn=norm(c.name);if(nn&&!byName.has(nn))byName.set(nn,c);}
 
@@ -646,7 +677,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
-const APP_VERSION="v62";
+const APP_VERSION="v64";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -775,9 +806,21 @@ async function loadCloudState(){
 
   function resolveLocal(db){
     if(!db)return null;
-    const loc=[db.city,db.state,db.country].filter(Boolean).join(", ");
+    const rawLoc=[db.city,db.state,db.country].filter(Boolean).join(", ");
+    const canonicalLoc=canonicalCourseLocations.get(norm(db.name))||"";
+    const loc=canonicalLoc||rawLoc;
     const n=norm(db.name);
-    const dbCountry=courseCountryFromLocation(loc,db.country);
+    const dbCountry=canonicalLoc?courseCountryFromLocation(canonicalLoc,"Scotland"):courseCountryFromLocation(loc,db.country);
+    // First restore a previously selected API course exactly as the user saw
+    // it. This prevents a bad/partial shared courses row from changing the
+    // user's course name or location on refresh.
+    const cached=cachedCourseMeta(db.name,loc,db.country);
+    if(cached){
+      const cachedCopy={...cached,id:cached.id,location:canonicalLoc||cached.location||loc};
+      const c=mergeCourse(cachedCopy);
+      cloudCourseMap.set(String(c.id),String(db.id));
+      return c;
+    }
     // Only use the ranked catalog when the stored course is in the same
     // country/region. This prevents Scotland/UK courses from being silently
     // converted into similarly named USA courses during hydration.
@@ -795,8 +838,9 @@ async function loadCloudState(){
       }
     }
     if(!c){
-      c=mergeCourse({id:`cloud-${db.id}`,name:db.name,location:loc||"Location not specified",country:db.country||"USA",
-        region:(String(db.state||"").toUpperCase()==="MI"?"michigan":"custom"),world:null,usa:null,michigan:null,
+      const fallbackCountry=canonicalLoc?"UK":(db.country||courseCountryFromLocation(loc,db.country)||"USA");
+      c=mergeCourse({id:`cloud-${db.id}`,name:db.name,location:loc||"Location not specified",country:fallbackCountry,
+        region:(fallbackCountry==="USA"&&String(db.state||"").toUpperCase()==="MI"?"michigan":(fallbackCountry==="USA"?"custom":"international")),world:null,usa:null,michigan:null,
         logo:db.logo_url||"",website:db.website_url||""});
       const nn=norm(db.name); if(nn&&!byName.has(nn))byName.set(nn,c);
     }
@@ -852,7 +896,7 @@ async function loadCloudState(){
   save();
   return true;
 }
-async function syncCourseToCloud(id,{updateRank=false}={}){
+async function syncCourseToCloud(id,{updateRank=false,rankOverride=null}={}){
   if(!supabaseClient||!currentUser||activeStateOwner!==String(currentUser.id))return;
   const c=get(id); if(!c)return;
   const dbid=await ensureDbCourse(c); if(!dbid)return;
@@ -862,7 +906,7 @@ async function syncCourseToCloud(id,{updateRank=false}={}){
     if(del.error)throw del.error;
     return;
   }
-  const rank=Math.max(1,state.myList.indexOf(id)+1);
+  const rank=Math.max(1,rankOverride==null?state.myList.indexOf(id)+1:Number(rankOverride));
   const existing=await supabaseClient.from("user_courses")
     .select("id,personal_rank").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
   if(existing.error)throw existing.error;
@@ -889,14 +933,22 @@ let syncQueue=Promise.resolve();
 let syncQueueOwner=null;
 function syncAllToCloud(){
   const requestedOwner=currentUser?.id||null;
+  const requestedOrder=[...state.myList];
   if(syncQueueOwner!==requestedOwner){syncQueue=Promise.resolve();syncQueueOwner=requestedOwner}
   const run=async()=>{
     if(!supabaseClient||!currentUser||String(currentUser.id)!==String(requestedOwner))return;
     if(activeStateOwner!==String(currentUser.id))return;
-    const ids=[...new Set([...state.myList,...Object.keys(state.played)])];
+    // Explicit ranking sync uses the order captured when the user acted, not
+    // whatever the UI happens to contain when an older queued sync runs.
+    const ids=[...new Set([...requestedOrder,...Object.keys(state.played)])];
     // This function is used only for explicit ranking/migration operations.
     // Normal round logging calls syncCourseToCloud() without updateRank.
-    for(const id of ids){if(count(id)>0||state.myList.includes(id))await syncCourseToCloud(id,{updateRank:true})}
+    for(const id of ids){
+      if(count(id)>0||requestedOrder.includes(id)){
+        const requestedRank=requestedOrder.indexOf(id);
+        await syncCourseToCloud(id,{updateRank:true,rankOverride:requestedRank>=0?requestedRank+1:null});
+      }
+    }
     localStorage.setItem("theCourseBookMigrated_"+currentUser.id,"1");
   };
   syncQueue=syncQueue.then(run).catch(e=>{console.warn("Cloud sync failed",e);toast(e?.code==="COURSE_NOT_IN_CATALOG"?"Saved locally; course is not in cloud catalog":"Saved locally; cloud sync failed")});
@@ -1112,25 +1164,29 @@ function addTouchDrag(el,box,id){
     updateGhost(x,y);
     placePlaceholder(x,y);
   };
-  const finish=async commit=>{
+  const finish=commit=>{
     clear();
+    let shouldSync=false,newRank=null,changed=false;
     if(dragging&&commit&&placeholder){
       if(currentUser&&activeStateOwner!==String(currentUser.id)){cleanup();return}
-      // Commit the final DOM position once, rather than mutating state on every
-      // finger movement. This eliminates the lag/oscillation on iPhone.
+      // Commit the final DOM position once. Most importantly, clean up the
+      // visual drag state BEFORE doing any async cloud work, so the ghost
+      // disappears the instant the finger leaves the screen.
       const rows=[...box.querySelectorAll('.rankrow')].filter(r=>r!==el);
       const pos=rows.indexOf(placeholder);
       if(pos>=0){
         const order=rows.map(r=>r.dataset.id);
         order.splice(pos,0,id);
         state.myList=order.filter((x,i,a)=>x&&a.indexOf(x)===i);
+        newRank=state.myList.indexOf(id)+1;
+        changed=newRank!==startIndex+1;
       }
       save();renderTop();renderMine();
-      if(currentUser)await syncAllToCloud();
-      const newRank=state.myList.indexOf(id)+1;
-      toast(newRank===startIndex+1?'Ranking unchanged':`Moved to #${newRank}`);
+      shouldSync=!!currentUser;
     }
     cleanup();
+    if(shouldSync)syncAllToCloud();
+    if(newRank!==null)toast(changed?`Moved to #${newRank}`:'Ranking unchanged');
   };
   if(handle){
     const onMove=e=>{
