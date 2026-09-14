@@ -532,6 +532,16 @@ function cachedCourseMeta(name,location,country){
   }
   return null;
 }
+const BUNDLED_COURSE_IDS=new Set(courses.map(c=>String(c.id)));
+function persistUserCourseRecord(c){
+  if(!c||!c.id||!activeStateOwner||BUNDLED_COURSE_IDS.has(String(c.id)))return;
+  const records=Array.isArray(state.courseRecords)?state.courseRecords:[];
+  const safe={id:String(c.id),name:String(c.name||""),location:String(c.location||""),country:c.country||"",region:c.region||"",world:c.world??null,usa:c.usa??null,michigan:c.michigan??null,public:c.public??null,michiganPublic:c.michiganPublic??null,logo:c.logo||"",website:c.website||""};
+  const i=records.findIndex(x=>String(x?.id)===String(c.id));
+  if(i>=0)records[i]=safe; else records.push(safe);
+  state.courseRecords=records;
+  save();
+}
 const byName=new Map();
 const canonicalizeCourse=c=>{
   if(!c)return c;
@@ -548,16 +558,20 @@ const mergeCourse=c=>{
     // course that the user already has or that is in the bundled catalog.
     canonicalizeCourse(existing);
     cacheCourseMeta(existing);
+    persistUserCourseRecord(existing);
     return existing;
   }
   const nn=norm(incoming.name);
-  const same=courses.find(x=>norm(x.name)===nn && (!incoming.location || !x.location || norm(x.location)===norm(incoming.location)));
-  if(same){
-    canonicalizeCourse(same);
-    cacheCourseMeta(same);
-    return same;
-  }
-  courses.push(incoming); if(nn)byName.set(nn,incoming); cacheCourseMeta(incoming); return incoming;
+  // Name similarity is never sufficient to identify an existing course. Two
+  // courses can share a name, and an API response can contain incomplete or
+  // stale location data. If the incoming record does not carry an explicit
+  // Course Book ID that already exists, keep it as its own record rather than
+  // mutating an existing course.
+  courses.push(incoming);
+  if(nn&&!byName.has(nn))byName.set(nn,incoming);
+  cacheCourseMeta(incoming);
+  persistUserCourseRecord(incoming);
+  return incoming;
 };
 for(const c of courses){const nn=norm(c.name);if(nn&&!byName.has(nn))byName.set(nn,c);}
 
@@ -647,13 +661,13 @@ const EMPTY_STATE={played:{},myList:[]};
 const LEGACY_STATE_KEY="theCourseBook";
 const USER_STATE_PREFIX="theCourseBook_user_";
 const LEGACY_OWNER_KEY="theCourseBookLegacyOwner";
-function cloneEmptyState(){return {played:{},myList:[]}}
+function cloneEmptyState(){return {played:{},myList:[],courseRecords:[],orderRevision:0}}
 function readStoredState(key){
   try{
     const raw=localStorage.getItem(key);
     if(!raw)return cloneEmptyState();
     const parsed=JSON.parse(raw);
-    return {played:(parsed&&parsed.played&&typeof parsed.played==="object")?parsed.played:{},myList:Array.isArray(parsed?.myList)?parsed.myList:[]};
+    return {played:(parsed&&parsed.played&&typeof parsed.played==="object")?parsed.played:{},myList:Array.isArray(parsed?.myList)?parsed.myList:[],courseRecords:Array.isArray(parsed?.courseRecords)?parsed.courseRecords:[],orderRevision:Number.isFinite(Number(parsed?.orderRevision))?Number(parsed.orderRevision):0};
   }catch(_){return cloneEmptyState()}
 }
 // IMPORTANT: My List is account-scoped. An authenticated user's local cache is
@@ -672,13 +686,19 @@ function activateUserState(userId){
     try{legacyOwner=localStorage.getItem(LEGACY_OWNER_KEY)}catch(_){ }
     if(!legacyOwner){
       const legacy=readStoredState(LEGACY_STATE_KEY);
-      if(legacy.myList.length||Object.keys(legacy.played).length){
+      if(legacy.myList.length||Object.keys(legacy.played).length||legacy.courseRecords?.length){
         state=legacy;
         try{localStorage.setItem(key,JSON.stringify(state));localStorage.setItem(LEGACY_OWNER_KEY,String(userId));localStorage.removeItem(LEGACY_STATE_KEY)}catch(_){ }
       }else state=cloneEmptyState();
     }else state=cloneEmptyState();
   }else state=readStoredState(key);
   activeStateOwner=String(userId);
+  // Restore this account's non-bundled course catalog before cloud hydration.
+  // These are course records only — never round history or ranking state.
+  for(const c of state.courseRecords||[]){
+    if(!c||!c.id||!c.name)continue;
+    if(!courses.some(x=>String(x.id)===String(c.id)))courses.push({...c});
+  }
 }
 let filter="world",dragged=null,touchDrag=null;
 // Runtime API -> Course Book mapping cache. The ranked course IDs are the
@@ -700,8 +720,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
-const APP_VERSION="v67";
+const APP_BUILD_UPDATED_AT="2026-09-14T09:00:00-04:00";
+const APP_VERSION="v73";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -883,6 +903,9 @@ async function ensureDbCourse(c,apiMeta=null){
 }
 async function loadCloudState(){
   if(!supabaseClient||!currentUser)return false;
+  const loadOwner=String(currentUser.id);
+  const loadRevision=Number(state.orderRevision)||0;
+  const loadOrder=[...state.myList];
   const [{data:userRows,error:userErr},{data:roundRows,error:roundErr}]=await Promise.all([
     supabaseClient.from("user_courses").select("course_id,times_played,personal_rank,first_played,last_played,notes").eq("user_id",currentUser.id).order("personal_rank",{ascending:true}),
     supabaseClient.from("rounds").select("course_id,played_at").eq("user_id",currentUser.id).order("played_at",{ascending:true})
@@ -898,85 +921,86 @@ async function loadCloudState(){
     (cr.data||[]).forEach(c=>dbById.set(String(c.id),c));
   }
 
-  // Convert a Supabase storage row into the immutable bundled Course Book
-  // record. The cloud row is never merged into a static course object.
-  function resolveLocal(db){
+  // Cloud rows are storage records only. They never mutate the bundled catalog.
+  // A cloud course can be resolved to an existing local Course Book record or,
+  // for a genuinely custom course, restored from this account's courseRecords.
+  function resolveCloudCourse(db){
     if(!db)return null;
-
-    // 1) Explicit static-catalog mapping is always preferred.
     const mappedStaticId=Object.entries(cloudCatalogMap).find(([,dbid])=>String(dbid)===String(db.id))?.[0];
     if(mappedStaticId){
       const mapped=staticCourseForId(mappedStaticId);
       if(mapped){cloudCourseMap.set(String(mapped.id),String(db.id));return mapped;}
     }
-
-    // 2) Preserve the Course Book identity already used by this account.
-    // This is critical for older rounds/custom courses whose local ID predates
-    // the cloud catalog row. Never replace that identity with cloud-<uuid>.
-    const existingLocalIds=[...new Set(state.myList||[])];
-    const localMatches=existingLocalIds.map(id=>get(id)).filter(Boolean).filter(c=>norm(c.name)===norm(db.name||""));
-    if(localMatches.length===1){
-      const local=localMatches[0];
-      const canonical=canonicalCourseLocations.get(norm(local.name||db.name||""));
-      if(canonical)local.location=canonical;
-      cloudCourseMap.set(String(local.id),String(db.id));
-      return local;
+    const record=(state.courseRecords||[]).find(c=>{
+      if(!c)return false;
+      const mapped=cloudCourseMap.get(String(c.id));
+      return String(mapped||"")===String(db.id);
+    });
+    if(record){
+      if(!get(record.id))courses.push({...record});
+      const local=get(record.id); if(local)cloudCourseMap.set(String(local.id),String(db.id));
+      return local||null;
     }
-
-    // 3) Match the immutable bundled catalog by explicit name/identity.
-    const staticMatch=staticCourseForCloudRecord(db);
-    if(staticMatch){
-      rememberCloudCatalogId(staticMatch.id,db.id);
-      cloudCourseMap.set(String(staticMatch.id),String(db.id));
-      return staticMatch;
+    const exact=staticCourseForCloudRecord(db);
+    if(exact){
+      rememberCloudCatalogId(exact.id,db.id);
+      cloudCourseMap.set(String(exact.id),String(db.id));
+      return exact;
     }
-
-    // 4) Only genuinely new/custom courses get a cloud-backed local identity.
-    // The cloud row supplies metadata only for these courses.
-    const id=`cloud-${db.id}`;
-    const canonicalKnown=canonicalCourseLocations.get(norm(db.name||""));
-    const loc=canonicalKnown||([db.city,db.state,db.country].filter(Boolean).join(", ")||"Location not specified");
-    const country=canonicalKnown?courseCountryFromLocation(canonicalKnown,""):courseCountryFromLocation(loc,db.country);
-    const c={id,name:db.name,location:loc,country,region:country==="USA"?"custom":"international",world:null,usa:null,michigan:null,michiganPublic:null,public:null,logo:db.logo_url||"",website:db.website_url||""};
-    const existing=courses.find(x=>String(x.id)===id);
-    const result=existing||mergeCourse(c);
-    cloudCourseMap.set(String(result.id),String(db.id));
-    return result;
+    return null;
   }
 
-  // IMPORTANT: authenticated rounds are the only play-count source.
-  // Membership is taken from user_courses, but play counts are derived solely
-  // from rounds. This keeps a course in its existing position while still
-  // allowing a zero-round course to disappear when its last round is deleted.
-  const next={played:{},myList:[...state.myList].filter(id=>get(id))};
-  const rankRows=[];
-  const cloudCourseIds=[];
-  for(const r of (userRows||[])){
-    const c=resolveLocal(dbById.get(String(r.course_id)));
-    if(c){rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});cloudCourseIds.push(c.id)}
-  }
   const roundCounts=new Map();
   for(const r of (roundRows||[])){
-    const c=resolveLocal(dbById.get(String(r.course_id)));
+    const c=resolveCloudCourse(dbById.get(String(r.course_id)));
     if(c)roundCounts.set(c.id,(roundCounts.get(c.id)||0)+1);
   }
-  for(const [id,n] of roundCounts)next.played[id]=n;
 
-  // Existing personal order is sacred. Do NOT sort or rebuild an existing list
-  // from cloud personal_rank. First retain existing IDs that still have rounds;
-  // then append only genuinely new round-bearing courses.
-  const hadLocalOrder=next.myList.length>0;
-  next.myList=next.myList.filter(id=>Number(next.played[id]||0)>0);
-  if(hadLocalOrder){
-    for(const id of Object.keys(next.played))if(next.played[id]>0&&!next.myList.includes(id))next.myList.push(id);
-  }else if(rankRows.length){
-    // A genuinely empty device may establish its first list from the cloud.
-    // This branch runs only when there was no local personal order at all.
-    rankRows.sort((a,b)=>a.rank-b.rank);
-    for(const r of rankRows)if(Number(next.played[r.id]||0)>0&&!next.myList.includes(r.id))next.myList.push(r.id);
+  // PERSONAL ORDER RULE — NON-NEGOTIABLE:
+  // If this account already has a local list, cloud hydration is NOT allowed to
+  // add, remove, sort, or otherwise reconstruct that list. Refreshing the app can
+  // therefore never move a course. Cloud personal_rank is only used to initialize
+  // a genuinely empty device/account state.
+  const hasExistingLocalOrder=loadOrder.length>0;
+  const next={played:{},myList:[...loadOrder],courseRecords:Array.isArray(state.courseRecords)?state.courseRecords:[],orderRevision:loadRevision};
+
+  if(hasExistingLocalOrder){
+    // Only refresh round counts for courses that already exist in the user's list.
+    for(const [id,n] of roundCounts)if(next.myList.includes(id))next.played[id]=n;
+  }else{
+    // First load on an empty device: establish the account's list from cloud rank.
+    // This is the ONLY code path that reads personal_rank to construct My List.
+    const rankRows=[];
+    for(const r of (userRows||[])){
+      const c=resolveCloudCourse(dbById.get(String(r.course_id)));
+      if(c)rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
+    }
+    rankRows.sort((a,b)=>a.rank-b.rank || String(a.id).localeCompare(String(b.id)));
+    for(const r of rankRows)if(!next.myList.includes(r.id))next.myList.push(r.id);
+    for(const [id,n] of roundCounts)next.played[id]=n;
   }
 
-  if(activeStateOwner!==String(currentUser.id))return false;
+  if(activeStateOwner!==loadOwner || !currentUser || String(currentUser.id)!==loadOwner)return false;
+  if((Number(state.orderRevision)||0)!==loadRevision || JSON.stringify(state.myList)!==JSON.stringify(loadOrder))return false;
+
+  // Never drop an existing local course. If its bundled record is unavailable,
+  // recover it from this account's persisted courseRecords. Missing records are
+  // left in the list rather than silently changing the user's ranking.
+  next.myList=next.myList.filter(id=>{
+    if(get(id))return true;
+    const rec=next.courseRecords.find(c=>String(c.id)===String(id));
+    if(rec){courses.push({...rec});return true;}
+    return false;
+  });
+  // The filter above is only an identity-recovery step; it must not reorder.
+  // If an ID cannot be recovered, preserve it in state anyway so its position is
+  // never silently replaced by another course.
+  for(const id of loadOrder){
+    if(!next.myList.includes(id)){
+      const pos=loadOrder.indexOf(id);
+      next.myList.splice(Math.min(pos,next.myList.length),0,id);
+    }
+  }
   state=next;
   save();
   return true;
@@ -1082,6 +1106,7 @@ async function moveCourseToRank(id,requested){
  state.myList.splice(oldIndex,1);
  rank=Math.max(1,Math.min(rank,state.myList.length+1));
  state.myList.splice(rank-1,0,id);
+ state.orderRevision=(Number(state.orderRevision)||0)+1;
  save();renderTop();renderMine();
  if(supabaseClient&&currentUser){try{await syncAllToCloud()}catch(e){console.warn(e);toast('Moved here; cloud update failed')}}
  toast(rank===1?'Moved to #1':`Moved to #${rank}`);
@@ -1265,6 +1290,7 @@ function addTouchDrag(el,box,id){
         const order=rows.map(r=>r.dataset.id);
         order.splice(pos,0,id);
         state.myList=order.filter((x,i,a)=>x&&a.indexOf(x)===i);
+        state.orderRevision=(Number(state.orderRevision)||0)+1;
         newRank=state.myList.indexOf(id)+1;
         changed=newRank!==startIndex+1;
       }
@@ -1568,6 +1594,11 @@ document.getElementById("save").onclick=async()=>{
   let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();
   if(!name)return toast("Enter a course name");
   let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};
+  // Persist the user's custom course record before touching the network. A
+  // refresh, tab suspension, or failed Supabase request must never erase the
+  // course identity or its position.
+  courses.push(c);
+  persistUserCourseRecord(c);
   let rank=Number(requestedRank);if(!requestedRank||!Number.isFinite(rank))rank=state.myList.length+1;else rank=Math.max(1,Math.min(Math.floor(rank),state.myList.length+1));
   try{
     const dbid=await ensureDbCourse(c);
