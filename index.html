@@ -610,7 +610,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T15:00:00-04:00";
-const APP_VERSION="v47";
+const APP_VERSION="v48";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
@@ -967,9 +967,9 @@ if(window.visualViewport){
 }
 window.addEventListener("resize",syncVisibleViewport);
 syncVisibleViewport();
-document.getElementById("log").onclick=()=>{modal.classList.add("open");syncVisibleViewport();document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";selectedCourseId=null;renderResults();setTimeout(()=>{syncVisibleViewport();document.getElementById("modalsearch").focus()},50)};
+document.getElementById("log").onclick=()=>{modal.classList.add("open");syncVisibleViewport();document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("modalsearch").value="";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";selectedCourseId=null;renderResults();setTimeout(()=>{syncVisibleViewport();document.getElementById("modalsearch").focus()},50)};
 document.getElementById("close").onclick=()=>modal.classList.remove("open");
-document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.getElementById("modalsearch").focus()};
+document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";document.getElementById("results").style.display="flex";document.getElementById("modalsearch").focus()};
 document.getElementById("modalsearch").oninput=()=>{syncVisibleViewport();renderResults()};
 let remoteSearchTimer=null;
 let miDirectoryPromise=null;
@@ -1095,7 +1095,7 @@ function renderResults(){
     },180);
   }
 }
-function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id);document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="How many rounds are you adding?";document.getElementById("modalsearch").value=c.name;document.getElementById("results").innerHTML="";document.getElementById("selectedCourseCard").innerHTML=`<strong>${c.name}</strong><small>${c.location}${existing?` · Already played ${existing}×`:""}</small>`;document.getElementById("quantityBox").style.display="block";document.getElementById("searchActions").style.display="none";document.getElementById("timesPlayed").value=1;setTimeout(()=>{document.getElementById("timesPlayed").focus();document.getElementById("timesPlayed").select()},50)}
+function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id);document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="How many rounds are you adding?";document.getElementById("modalsearch").value=c.name;document.getElementById("results").innerHTML="";document.getElementById("results").style.display="none";document.getElementById("selectedCourseCard").innerHTML=`<strong>${c.name}</strong><small>${c.location}${existing?` · Already played ${existing}×`:""}</small>`;document.getElementById("quantityBox").style.display="block";document.getElementById("searchActions").style.display="none";document.querySelector(".logmodal .searchgroup").style.display="none";document.getElementById("timesPlayed").value=1;setTimeout(()=>{document.getElementById("timesPlayed").focus();document.getElementById("timesPlayed").select()},50)}
 document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;const qty=Math.max(1,parseInt(document.getElementById("timesPlayed").value,10)||1);logRounds(selectedCourseId,qty)};
 document.getElementById("timesPlayed").addEventListener("focus",()=>{syncVisibleViewport();setTimeout(()=>document.getElementById("confirmLog").scrollIntoView({behavior:"smooth",block:"nearest"}),250)});
 async function logRounds(id,qty){
