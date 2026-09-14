@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -28,7 +28,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .empty{text-align:center;padding:65px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted)}.empty h3{font:600 25px 'Playfair Display';color:var(--cream);margin:0 0 7px}
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px 1fr 45px;gap:9px;padding:10px}.row .meta{display:none}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;padding:10px}.row .meta{display:none}.row .gold{white-space:nowrap;text-align:right;font-size:12px}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 
 @media(max-width:760px){
   body.mobile-searching{overflow-x:hidden}
@@ -273,7 +273,7 @@ function parseGolfDigestRanking(markdown, type, maxRank){
       .trim();
     // Accept both Jina Markdown headings and plain-text rank lines. Golf Digest
     // also uses T-xx for tied world rankings.
-    const m=line.match(/^(?:\*\*)?\[?(?:T-)?(\d{1,3})(?:\))?\.\s+(.+?)(?:\]\([^)]*\))?(?:\*\*)?$/);
+    const m=line.match(/^(?:\*\*)?\[?(?:T-)?(\d{1,3})(?:\))?\.\s+(.+?)(?:\]\([^)]*\))?(?:\s+\*\*)?$/);
     if(!m) continue;
     const rank=Number(m[1]);
     if(rank<1||rank>maxRank) continue;
@@ -285,7 +285,7 @@ function parseGolfDigestRanking(markdown, type, maxRank){
     for(let j=i+1;j<Math.min(i+8,lines.length);j++){
       let candidate=cleanRankingName(lines[j].replace(/^#+\s*/,""));
       if(!candidate || /^\d+\s*\/\s*\d+$/.test(candidate) || /^previous rank/i.test(candidate)) continue;
-      if(/,\s*[A-Z]{2}(?:$|\s)/.test(candidate) || /,\s*(Scotland|England|Ireland|Northern Ireland|Wales|Australia|New Zealand|Japan|Canada|Mexico|Tasmania|Netherlands|South Africa|Argentina|Colombia|Singapore|China|Fiji)/i.test(candidate)){
+      if(/,\s*[A-Z]{2}(?:$|\s)/.test(candidate) || /,\s*(Scotland|England|Ireland|Northern Ireland|Wales|Australia|New Zealand|Japan|Canada|Mexico|Tasmania|Netherlands|South Africa|Argentina|Colombia|Singapore|China|Fiji|Spain|France|Italy|Sweden|Denmark|Germany|Portugal|Austria|Belgium|Switzerland|South Korea)/i.test(candidate)){
         loc=candidate; break;
       }
     }
@@ -308,9 +308,9 @@ function stripHtmlForRanking(html){
   try{
     const doc=new DOMParser().parseFromString(String(html||""),"text/html");
     return [...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")]
-      .map(h=>h.textContent.replace(/\\s+/g," ").trim())
+      .map(h=>h.textContent.replace(/\s+/g," ").trim())
       .filter(Boolean)
-      .join("\\n");
+      .join("\n");
   }catch(e){ return String(html||""); }
 }
 async function fetchRanking(url){
@@ -327,8 +327,8 @@ async function fetchRanking(url){
       const res=await fetch(endpoint,{cache:"no-store",headers:{"Accept":"text/plain,text/html,*/*"}});
       if(!res.ok) throw new Error("Ranking proxy "+res.status);
       const raw=await res.text();
-      const text=/<html|<h[1-6][\\s>]/i.test(raw)?stripHtmlForRanking(raw):raw;
-      if(text && /(?:T-)?\\d{1,3}\\.\\s+/.test(text)) return text;
+      const text=/<html|<body|<h[1-6][\s>]/i.test(raw)?stripHtmlForRanking(raw):raw;
+      if(text && /(?:T-)?\d{1,3}\.\s+/.test(text)) return text;
       throw new Error("Ranking response did not contain rank entries");
     }catch(e){ lastErr=e; }
   }
@@ -345,6 +345,7 @@ async function loadRankings(){
         const list=parseGolfDigestHeadingList(text,"usa",100);
         if(list.length<80) throw new Error("Only parsed "+list.length+" USA courses");
         list.forEach(c=>mergeCourse({...c,usa:c.rank,id:slugId(c.name,c.location)}));
+        renderTop();
         console.info("Golf Digest USA ranking loaded",list.length);
       }catch(e){ console.warn("Golf Digest USA ranking load failed",e); }
     })(),
@@ -354,6 +355,7 @@ async function loadRankings(){
         const list=parseGolfDigestHeadingList(text,"world",100);
         if(list.length<80) throw new Error("Only parsed "+list.length+" World courses");
         list.forEach(c=>mergeCourse({...c,world:c.rank,id:slugId(c.name,c.location)}));
+        renderTop();
         console.info("Golf Digest World ranking loaded",list.length);
       }catch(e){ console.warn("Golf Digest World ranking load failed",e); }
     })(),
@@ -363,6 +365,8 @@ async function loadRankings(){
         const list=parseGolfDigestHeadingList(text,"michigan",100);
         if(list.length<35) throw new Error("Only parsed "+list.length+" Michigan courses");
         list.forEach(c=>mergeCourse({...c,michigan:c.rank,id:slugId(c.name,c.location)}));
+        fillMichiganTo100();
+        renderTop();
         console.info("Golf Digest Michigan ranking loaded",list.length);
       }catch(e){ console.warn("Golf Digest Michigan ranking load failed",e); }
       fillMichiganTo100();
