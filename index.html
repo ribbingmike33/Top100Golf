@@ -20,7 +20,7 @@ nav{max-width:1160px;margin:auto;padding:24px 24px 0;display:flex;gap:6px}.nav{b
 main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.page.active{display:block}
 .hero{display:grid;grid-template-columns:1fr 350px;gap:24px;align-items:stretch}.copy{padding:28px 0}.eyebrow{text-transform:uppercase;letter-spacing:2px;color:var(--gold);font-size:11px;font-weight:700;margin-bottom:10px}h1{font:600 clamp(40px,5vw,60px)/.98 'Playfair Display';letter-spacing:-1.5px;margin:0 0 16px}.copy p{max-width:590px;color:var(--muted);line-height:1.65;margin:0}
 .card{background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:17px;padding:24px;box-shadow:0 20px 55px rgba(0,0,0,.18)}.statlabel{text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-size:11px}.stat{display:flex;align-items:baseline;gap:7px;margin:15px 0}.stat strong{font:600 56px 'Playfair Display'}.stat span{color:var(--muted)}.bar{height:7px;background:rgba(255,255,255,.08);border-radius:20px;overflow:hidden}.fill{height:100%;width:0;background:var(--gold);transition:.3s}.statfoot{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:12px}
-.controls{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:34px 0 16px}.seg{display:flex;padding:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px}.seg button{border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:6px;font-size:13px;font-weight:700}.seg button.active{background:var(--cream);color:var(--bg)}.search{position:relative;width:290px}.search input{width:100%;height:43px;padding:0 13px 0 38px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;color:var(--cream);outline:0}.search input:focus{border-color:rgba(199,170,107,.5)}.search span{position:absolute;left:13px;top:10px;color:var(--muted)}
+.controls{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:34px 0 16px}.seg{display:flex;padding:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px}.seg button{border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:6px;font-size:13px;font-weight:700}.seg button.active{background:var(--cream);color:var(--bg)}.search{position:relative;width:290px}.search input{width:100%;height:43px;padding:0 13px 0 38px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;color:var(--cream);outline:0}.search input:focus{border-color:rgba(199,170,107,.5)}.search span{position:absolute;left:13px;top:10px;color:var(--muted)}.refresh-btn{white-space:nowrap;min-height:43px;padding:0 16px}.mine-controls .search{flex:1}.mine-controls{justify-content:flex-start}
 .label{text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);font-size:11px;margin:24px 0 10px}.list{display:flex;flex-direction:column;gap:7px}
 .row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
@@ -29,6 +29,8 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;padding:10px}.row .meta{display:none}.row .gold{white-space:nowrap;text-align:right;font-size:12px}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px 1fr 52px;gap:8px;padding:9px}.rankrow .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+.mine-controls{flex-direction:row;align-items:center;gap:8px}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto;height:43px;padding:0 14px}
 
 @media(max-width:760px){
   body.mobile-searching{overflow-x:hidden}
@@ -169,7 +171,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 
 <section id="mine" class="page active">
 <div class="listhead"><div><div class="eyebrow">Your courses</div><h2>My List</h2><p>Press and drag a course to change your ranking.</p></div><button class="primary" id="log">+ Log a Round</button></div>
-<div class="controls"><div class="seg"><button class="active">Played</button></div><div class="search"><span>⌕</span><input id="mysearch" placeholder="Search my courses..."></div></div>
+<div class="controls mine-controls"><div class="search"><span>⌕</span><input id="mysearch" placeholder="Search my courses..."></div><button class="secondary refresh-btn" id="refreshMine" type="button">Refresh</button></div>
 <div class="label">Personal ranking</div><div class="list" id="mylist"></div>
 </section>
 </main>
@@ -618,6 +620,28 @@ function addTouchDrag(el,box,id){
   el.addEventListener('pointerup',()=>{if(mode==='pointer')finish(true)});
   el.addEventListener('pointercancel',()=>{if(mode==='pointer')finish(false)});
 }
+
+async function refreshMineData(){
+  const btn=document.getElementById("refreshMine");
+  if(btn){btn.disabled=true;btn.textContent="Refreshing…"}
+  try{
+    if(supabaseClient&&currentUser){
+      await loadCloudState();
+    }
+    renderTop();
+    renderMine();
+    toast("Refreshed");
+  }catch(e){
+    console.warn("Manual refresh failed",e);
+    renderTop();
+    renderMine();
+    toast("Refresh failed — local data kept");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Refresh"}
+  }
+}
+
+document.getElementById("refreshMine").onclick=refreshMineData;
 
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));
