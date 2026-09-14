@@ -68,21 +68,21 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 
 .app-footer{max-width:1120px;margin:28px auto 0;padding:18px 20px 30px;text-align:center;color:rgba(233,225,204,.58);font-size:12px;letter-spacing:.04em}.app-footer span{display:inline-block}
 
-/* Compact Top 100 grid: fit substantially more ranked courses on screen */
-#toplist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#toplist .row{min-width:0;grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:8px;min-height:64px;padding:8px 10px}
-#toplist .row .course{font-size:14px;line-height:1.15}
-#toplist .row .loc{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#toplist .row .gold{font-size:11px;white-space:nowrap}
+/* Top 100 display: restore the original full-width ranked course rows.
+   The selector bar is a fixed, visible sort bar rather than a horizontal scroller. */
+#toplist{display:flex;flex-direction:column;gap:7px}
+#toplist .row{min-width:0}
+.seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:min(100%,760px)}
+.seg button{white-space:nowrap}
 @media(max-width:760px){
-  #toplist{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-  #toplist .row{grid-template-columns:27px 34px minmax(0,1fr) 52px;gap:6px;min-height:58px;padding:7px 7px;border-radius:9px}
-  #toplist .row .rank{font-size:15px}
-  #toplist .row .logo{width:34px;height:34px;font-size:10px}
-  #toplist .row .course{font-size:12px;line-height:1.12}
-  #toplist .row .loc{display:none}
-  #toplist .row .gold{font-size:10px}
+  .seg{grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:2px}
+  .seg button{padding:9px 8px;font-size:12px}
+  .seg button:nth-child(4){grid-column:1 / span 2}
+  .seg button:nth-child(5){grid-column:3}
+  #toplist{display:flex;flex-direction:column;gap:7px}
+  #toplist .row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;min-height:64px;padding:9px 10px}
 }
+
 </style>
 
 <style>
@@ -604,21 +604,18 @@ function rememberApiMapping(apiId,canonicalId){
   try{localStorage.setItem("theCourseBookApiMappings",JSON.stringify(apiAliasCache));}catch(e){}
 }
 let currentUser=null, authMode="signin", syncing=false;
+// Build timestamp: intentionally fixed in the HTML so it changes only when a new
+// app file is generated. A manual browser/app refresh must NOT change this.
+const APP_BUILD_UPDATED_AT="2026-09-14T12:50:00-04:00";
+const APP_VERSION="v40";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
-  const raw=localStorage.getItem("theCourseBookRefreshedAt");
-  if(!raw){el.textContent="Last updated —";return;}
-  const d=new Date(raw);
+  const d=new Date(APP_BUILD_UPDATED_AT);
   if(Number.isNaN(d.getTime())){el.textContent="Last updated —";return;}
-  el.textContent="Last updated " + d.toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+  el.textContent="Last updated " + d.toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}) + " · " + APP_VERSION;
 }
-function markUpdated(){
-  const now=new Date().toISOString();
-  localStorage.setItem("theCourseBookRefreshedAt",now);
-  updateRefreshedDate();
-}
-const save=()=>{localStorage.setItem("theCourseBook",JSON.stringify(state));markUpdated();};
+const save=()=>{localStorage.setItem("theCourseBook",JSON.stringify(state));updateRefreshedDate();};
 const cloudCourseMap=new Map();
 function setAuthStatus(label,signedIn){
   const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
@@ -1133,7 +1130,7 @@ async function migrateAndLoadCloud(){
 // Boot immediately so the app works from an iPhone Home Screen/PWA even when
 // an external ranking source is slow or unavailable. Network data fills in
 // progressively afterward.
-markUpdated();
+updateRefreshedDate();
 renderTop();
 renderMine();
 (async function(){
