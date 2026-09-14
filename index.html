@@ -67,6 +67,22 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 @media(max-width:760px){.mine-controls{flex-direction:row;align-items:center}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto}}
 
 .app-footer{max-width:1120px;margin:28px auto 0;padding:18px 20px 30px;text-align:center;color:rgba(233,225,204,.58);font-size:12px;letter-spacing:.04em}.app-footer span{display:inline-block}
+
+/* Compact Top 100 grid: fit substantially more ranked courses on screen */
+#toplist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#toplist .row{min-width:0;grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:8px;min-height:64px;padding:8px 10px}
+#toplist .row .course{font-size:14px;line-height:1.15}
+#toplist .row .loc{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toplist .row .gold{font-size:11px;white-space:nowrap}
+@media(max-width:760px){
+  #toplist{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  #toplist .row{grid-template-columns:27px 34px minmax(0,1fr) 52px;gap:6px;min-height:58px;padding:7px 7px;border-radius:9px}
+  #toplist .row .rank{font-size:15px}
+  #toplist .row .logo{width:34px;height:34px;font-size:10px}
+  #toplist .row .course{font-size:12px;line-height:1.12}
+  #toplist .row .loc{display:none}
+  #toplist .row .gold{font-size:10px}
+}
 </style>
 
 <style>
@@ -308,30 +324,110 @@ if(!courses.some(c=>c.michigan===100)) courses.push(staticMichigan100);
    Golfweek ranks the top 20 public-access courses in Michigan; ties retain the
    same rank. These records share the same permanent Course Book course IDs
    where a course already exists, so API logging updates the same course. */
-const michiganPublic20=[
+const michiganPublic100=[
   {rank:1,name:"Arcadia Bluffs Golf Club",location:"Arcadia, Michigan",id:"michigan11"},
   {rank:2,name:"Greywalls at Marquette Golf Club",location:"Marquette, Michigan",id:"michigan4"},
-  {rank:3,name:"The Loop: Red & Black",location:"Roscommon, Michigan",id:"public62"},
-  {rank:4,name:"Arcadia Bluffs: South",location:"Arcadia, Michigan",id:"michigan9"},
+  {rank:3,name:"Bay Harbor Golf Club: Links/Quarry",location:"Petoskey, Michigan",id:"michigan28"},
   {rank:4,name:"Forest Dunes Golf Club",location:"Roscommon, Michigan",id:"michigan10"},
-  {rank:6,name:"Bay Harbor Golf Club: Links/Quarry",location:"Petoskey, Michigan",id:"michigan28"},
-  {rank:7,name:"Belvedere Golf Club",location:"Charlevoix, Michigan",id:"michigan8"},
-  {rank:8,name:"Eagle Eye Golf Club",location:"Bath, Michigan",id:"michigan37"},
-  {rank:9,name:"Sweetgrass Golf Club",location:"Harris, Michigan",id:"michigan31"},
-  {rank:9,name:"Gull Lake View: Stoatin Brae",location:"Augusta, Michigan",id:"michigan41"},
-  {rank:11,name:"American Dunes Golf Club",location:"Grand Haven, Michigan",id:"mipub11"},
-  {rank:12,name:"Pilgrim's Run Golf Club",location:"Pierson, Michigan",id:"michigan32"},
-  {rank:13,name:"University of Michigan Golf Course",location:"Ann Arbor, Michigan",id:"michigan12"},
-  {rank:14,name:"Tullymore Golf Resort",location:"Stanwood, Michigan",id:"mipub14"},
-  {rank:15,name:"Sage Run Golf Course",location:"Bark River, Michigan",id:"mipub15"},
-  {rank:16,name:"Harbor Shores Golf Club",location:"Benton Harbor, Michigan",id:"mipub16"},
-  {rank:17,name:"Boyne Highlands: Arthur Hills",location:"Harbor Springs, Michigan",id:"mipub17"},
-  {rank:18,name:"Hidden River Golf & Casting Club",location:"Brutus, Michigan",id:"michigan63"},
-  {rank:19,name:"TimberStone at Pine Mountain",location:"Iron Mountain, Michigan",id:"michigan34"},
-  {rank:20,name:"Treetops Resort: Smith",location:"Gaylord, Michigan",id:"michigan67"}
+  {rank:5,name:"The Loop: Black",location:"Roscommon, Michigan",id:"michigan17"},
+  {rank:6,name:"Gull Lake View: Stoatin Brae",location:"Augusta, Michigan",id:"michigan41"},
+  {rank:7,name:"Sage Run Golf Club",location:"Bark River, Michigan",id:"mipub7"},
+  {rank:8,name:"Arcadia Bluffs: South",location:"Arcadia, Michigan",id:"michigan9"},
+  {rank:9,name:"Eagle Eye Golf Club",location:"Bath, Michigan",id:"michigan37"},
+  {rank:10,name:"Harbor Shores Golf Club",location:"Benton Harbor, Michigan",id:"mipub10"},
+  {rank:11,name:"Pilgrim's Run Golf Club",location:"Pierson, Michigan",id:"michigan32"},
+  {rank:12,name:"Grand Traverse Resort: The Bear",location:"Traverse City, Michigan",id:"michigan65"},
+  {rank:13,name:"Black Lake Golf Club",location:"Onaway, Michigan",id:"mipub13"},
+  {rank:14,name:"The Orchards Golf Club",location:"Washington, Michigan",id:"michigan61"},
+  {rank:15,name:"TimberStone at Pine Mountain",location:"Iron Mountain, Michigan",id:"michigan34"},
+  {rank:16,name:"Sweetgrass Golf Club",location:"Harris, Michigan",id:"michigan31"},
+  {rank:17,name:"Treetops Resort: Smith",location:"Gaylord, Michigan",id:"michigan67"},
+  {rank:18,name:"Shepherd's Hollow Golf Club",location:"Clarkston, Michigan",id:"michigan66"},
+  {rank:19,name:"Tullymore Golf Resort",location:"Stanwood, Michigan",id:"mipub19"},
+  {rank:20,name:"Hidden River Golf & Casting Club",location:"Brutus, Michigan",id:"michigan63"},
+  {rank:21,name:"Cedar River at Shanty Creek",location:"Bellaire, Michigan",id:"michigan49"},
+  {rank:22,name:"The Highlands at Boyne",location:"Harbor Springs, Michigan",id:"mipub22"},
+  {rank:23,name:"Treetops Resort: Robert Trent Jones Sr.",location:"Gaylord, Michigan",id:"michigan60"},
+  {rank:24,name:"Lakewood Shores: The Gailes",location:"Oscoda, Michigan",id:"michigan94"},
+  {rank:25,name:"Black Forest",location:"Gaylord, Michigan",id:"mipub25"},
+  {rank:26,name:"Otsego Resort",location:"Gaylord, Michigan",id:"mipub26"},
+  {rank:27,name:"Belvedere Golf Club",location:"Charlevoix, Michigan",id:"michigan8"},
+  {rank:28,name:"American Dunes Golf Club",location:"Grand Haven, Michigan",id:"mipub28"},
+  {rank:29,name:"University of Michigan Golf Course",location:"Ann Arbor, Michigan",id:"michigan12"},
+  {rank:30,name:"Champion Hill Golf Course",location:"Marshall, Michigan",id:"michigan46"},
+  {rank:31,name:"The Mines Golf Club",location:"Grand Rapids, Michigan",id:"michigan50"},
+  {rank:32,name:"Diamond Springs Golf Course",location:"Hamilton, Michigan",id:"michigan27"},
+  {rank:33,name:"Red Hawk Golf Club",location:"East Tawas, Michigan",id:"michigan59"},
+  {rank:34,name:"Hawk's Eye Golf Resort",location:"Bellaire, Michigan",id:"michigan64"},
+  {rank:35,name:"Harbor Pointe Golf Club",location:"Harbor Springs, Michigan",id:"michigan71"},
+  {rank:36,name:"Buck's Run Golf Club",location:"Mount Pleasant, Michigan",id:"michigan72"},
+  {rank:37,name:"St. Ives Golf Club",location:"Stanwood, Michigan",id:"michigan73"},
+  {rank:38,name:"The Legend at Shanty Creek",location:"Bellaire, Michigan",id:"michigan76"},
+  {rank:39,name:"Boyne Mountain: Donald Ross Memorial",location:"Boyne Falls, Michigan",id:"michigan77"},
+  {rank:40,name:"Hawk Hollow Golf Course",location:"Bath, Michigan",id:"michigan78"},
+  {rank:41,name:"Moose Ridge Golf Course",location:"South Lyon, Michigan",id:"michigan82"},
+  {rank:42,name:"Bedford Valley Golf Club",location:"Battle Creek, Michigan",id:"michigan84"},
+  {rank:43,name:"Gull Lake Country Club",location:"Richland, Michigan",id:"michigan85"},
+  {rank:44,name:"Farmington Hills Golf Club",location:"Farmington Hills, Michigan",id:"michigan86"},
+  {rank:45,name:"Manitou Passage Golf Club",location:"Cedar, Michigan",id:"michigan87"},
+  {rank:46,name:"The Moors Golf Club",location:"Portage, Michigan",id:"michigan89"},
+  {rank:47,name:"Forest Akers West",location:"East Lansing, Michigan",id:"michigan90"},
+  {rank:48,name:"Boyne Mountain: Alpine",location:"Boyne Falls, Michigan",id:"michigan91"},
+  {rank:49,name:"Crystal Mountain: Mountain Ridge",location:"Thompsonville, Michigan",id:"michigan92"},
+  {rank:50,name:"Lakewood Shores Resort: Blackshire",location:"Oscoda, Michigan",id:"mipub50"},
+  {rank:51,name:"Pine Lakes Golf Course",location:"Harrison Township, Michigan",id:"michigan95"},
+  {rank:52,name:"Grande Golf Club",location:"Boyne Falls, Michigan",id:"michigan97"},
+  {rank:53,name:"Bahle Farms Golf Course",location:"Suttons Bay, Michigan",id:"michigan98"},
+  {rank:54,name:"Bucks Run Golf Club",location:"Mount Pleasant, Michigan",id:"mipub54"},
+  {rank:55,name:"The Medalist Golf Club",location:"Marshall, Michigan",id:"mipub55"},
+  {rank:56,name:"PohlCat Golf Course",location:"Mount Pleasant, Michigan",id:"mipub56"},
+  {rank:57,name:"Thousand Oaks Golf Club",location:"Grand Rapids, Michigan",id:"mipub57"},
+  {rank:58,name:"The Jewel Golf Club",location:"Reed City, Michigan",id:"mipub58"},
+  {rank:59,name:"Treetops Resort: Fazio Premier",location:"Gaylord, Michigan",id:"michigan70"},
+  {rank:60,name:"Boyne Highlands: Heather",location:"Harbor Springs, Michigan",id:"michigan52"},
+  {rank:61,name:"Boyne Highlands: Arthur's Course",location:"Harbor Springs, Michigan",id:"mipub61"},
+  {rank:62,name:"Crooked Tree Golf Club",location:"Petoskey, Michigan",id:"mipub62"},
+  {rank:63,name:"The Loop: Red",location:"Roscommon, Michigan",id:"michigan21"},
+  {rank:64,name:"Bay Harbor: Quarry/Preserve",location:"Bay Harbor, Michigan",id:"mipub64"},
+  {rank:65,name:"Bay Harbor: Preserve/Links",location:"Bay Harbor, Michigan",id:"mipub65"},
+  {rank:66,name:"The Lakes Golf Course at Lakewood Shores",location:"Oscoda, Michigan",id:"mipub66"},
+  {rank:67,name:"Garland Golf Resort: Fazio Premier",location:"Lewiston, Michigan",id:"mipub67"},
+  {rank:68,name:"Garland Golf Resort: Reflections",location:"Lewiston, Michigan",id:"mipub68"},
+  {rank:69,name:"Gull Lake View: Bedford Valley",location:"Augusta, Michigan",id:"mipub69"},
+  {rank:70,name:"Gull Lake View: Gull Lake West",location:"Augusta, Michigan",id:"mipub70"},
+  {rank:71,name:"Gull Lake View: Gull Lake East",location:"Augusta, Michigan",id:"mipub71"},
+  {rank:72,name:"Shanty Creek: Summit",location:"Bellaire, Michigan",id:"mipub72"},
+  {rank:73,name:"Shanty Creek: Cedar River",location:"Bellaire, Michigan",id:"mipub73"},
+  {rank:74,name:"Shanty Creek: The Legend",location:"Bellaire, Michigan",id:"mipub74"},
+  {rank:75,name:"Treetops Resort: Threetops",location:"Gaylord, Michigan",id:"mipub75"},
+  {rank:76,name:"Treetops Resort: Rick Smith Signature",location:"Gaylord, Michigan",id:"mipub76"},
+  {rank:77,name:"Treetops Resort: Jones Masterpiece",location:"Gaylord, Michigan",id:"mipub77"},
+  {rank:78,name:"Timberstone at Pine Mountain",location:"Iron Mountain, Michigan",id:"michigan34"},
+  {rank:79,name:"The Fortress Golf Course",location:"Frankenmuth, Michigan",id:"mipub79"},
+  {rank:80,name:"Maple Hill Golf Club",location:"Grandville, Michigan",id:"mipub80"},
+  {rank:81,name:"St. Johns Golf Course",location:"St. Johns, Michigan",id:"mipub81"},
+  {rank:82,name:"Katke-Cousins Golf Course",location:"Rochester Hills, Michigan",id:"mipub82"},
+  {rank:83,name:"Rackham Golf Course",location:"Huntington Woods, Michigan",id:"michigan74"},
+  {rank:84,name:"Thornapple Pointe Golf Club",location:"Grand Rapids, Michigan",id:"michigan57"},
+  {rank:85,name:"Pheasant Run Golf Club",location:"Canton, Michigan",id:"mipub85"},
+  {rank:86,name:"Pine Trace Golf Club",location:"Rochester Hills, Michigan",id:"mipub86"},
+  {rank:87,name:"Cherry Creek Golf Club",location:"Shelby Township, Michigan",id:"mipub87"},
+  {rank:88,name:"The Majestic at Lake Walden",location:"Hartland, Michigan",id:"mipub88"},
+  {rank:89,name:"Northville Hills Golf Club",location:"Northville, Michigan",id:"mipub89"},
+  {rank:90,name:"Boulder Pointe Golf Club",location:"Oxford, Michigan",id:"mipub90"},
+  {rank:91,name:"Mystic Creek Golf Club",location:"Milford, Michigan",id:"mipub91"},
+  {rank:92,name:"Brentwood Golf Club",location:"White Lake, Michigan",id:"mipub92"},
+  {rank:93,name:"Whispering Pines Golf Club",location:"Pinckney, Michigan",id:"mipub93"},
+  {rank:94,name:"Golden Fox at Fox Hills",location:"Plymouth, Michigan",id:"mipub94"},
+  {rank:95,name:"Pine View Golf Club",location:"Ypsilanti, Michigan",id:"mipub95"},
+  {rank:96,name:"Raisin River Golf Club",location:"Tecumseh, Michigan",id:"mipub96"},
+  {rank:97,name:"Washtenaw Golf Club",location:"Ypsilanti, Michigan",id:"michigan54"},
+  {rank:98,name:"Lansing Country Club Public Course",location:"Lansing, Michigan",id:"mipub98"},
+  {rank:99,name:"Eagle Crest Golf Club",location:"Ypsilanti, Michigan",id:"mipub99"},
+  {rank:100,name:"Pine Mountain Resort Golf Course",location:"Iron Mountain, Michigan",id:"mipub100"}
 ];
-for(const m of michiganPublic20){
-  let c=courses.find(x=>x.id===m.id);
+for(const m of michiganPublic100){
+  let c=courses.find(x=>x.id===m.id) || courses.find(x=>publicNorm(x.name)===publicNorm(m.name));
   if(!c){c={id:m.id,name:m.name,location:m.location,region:"michigan",world:null,usa:null,public:null,michigan:null};courses.push(c)}
   c.michiganPublic=m.rank;
 }
@@ -687,8 +783,8 @@ function renderTop(){
  let box=document.getElementById("toplist");box.innerHTML="";
  arr.forEach(c=>{let r=c[rankKey];let p=count(c.id);let el=document.createElement("div");el.className="row"+(p?" played-row":"");el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
  let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
- document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":filter==="michiganPublic"?"Michigan - Public":"Michigan - All")+(filter==="michiganPublic"?" Top 20":" Top 100");
- const total=filter==="michiganPublic"?20:100;
+ document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":filter==="michiganPublic"?"Michigan - Public":"Michigan - All")+" Top 100";
+ const total=100;
  document.getElementById("num").textContent=played+" / "+total;
  document.getElementById("fill").style.width=played+"%";
  document.getElementById("totalLabel").textContent="/ "+total+" played";
