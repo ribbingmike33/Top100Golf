@@ -646,7 +646,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
-const APP_VERSION="v61";
+const APP_VERSION="v62";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1136,16 +1136,22 @@ function addTouchDrag(el,box,id){
     const onMove=e=>{
       if(mode!=="touch"||touchId===null)return;
       const t=[...e.touches].find(x=>x.identifier===touchId);if(!t)return;
-      if(!dragging){if(Math.abs(t.clientY-startY)>10){clear();return}}
-      if(!dragging&&Math.abs(t.clientY-startY)<=10)return;
-      if(!dragging)begin(t.clientX,t.clientY);
+      const dy=Math.abs(t.clientY-startY);
+      if(!dragging){
+        if(dy<8)return;
+        // Start immediately once the finger has clearly moved. Do not cancel
+        // the drag here: doing so was the reason iPhone drags often did nothing.
+        begin(t.clientX,t.clientY);
+      }
+      e.preventDefault();
       move(t.clientX,t.clientY,e);
     };
     const onEnd=async()=>{if(mode==="touch")await finish(true);window.removeEventListener('touchmove',onMove,{passive:false});window.removeEventListener('touchend',onEnd,{passive:true});window.removeEventListener('touchcancel',onCancel,{passive:true})};
     const onCancel=async()=>{if(mode==="touch")await finish(false);window.removeEventListener('touchmove',onMove,{passive:false});window.removeEventListener('touchend',onEnd,{passive:true});window.removeEventListener('touchcancel',onCancel,{passive:true})};
     handle.addEventListener('touchstart',e=>{
       if(!e.touches?.length)return;const t=e.touches[0];mode="touch";touchId=t.identifier;startY=t.clientY;active=false;clear();
-      // The handle is a dedicated drag target; begin after a small movement.
+      // The handle is a dedicated drag target. The drag begins after a small
+      // movement; touchmove becomes non-scrollable only once dragging starts.
       window.addEventListener('touchmove',onMove,{passive:false});window.addEventListener('touchend',onEnd,{passive:true});window.addEventListener('touchcancel',onCancel,{passive:true});
     },{passive:true});
   }
