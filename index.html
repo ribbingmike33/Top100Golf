@@ -25,6 +25,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
 .rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px 1fr 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab}.rankrow.dragging{opacity:.55;border-color:var(--gold)}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.08)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}
+.rankactions{display:flex;gap:7px;margin-top:10px}.rankaction{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--cream);padding:9px 10px;border-radius:8px;font-size:12px;font-weight:700}.rankaction.primary-rank{background:var(--cream);color:var(--bg);border-color:var(--cream)}.rankmoveinput{width:100%;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:9px;color:var(--cream);padding:0 12px;font-size:18px;outline:0}.rankmovehint{font-size:12px;color:var(--muted);margin-top:6px}.rankmodal-course{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.035);margin-bottom:16px}.rankmodal-course strong{display:block;font-family:'Playfair Display';font-size:20px;color:var(--cream)}.rankmodal-course span{display:block;color:var(--muted);font-size:12px;margin-top:3px}@media(max-width:760px){.rankactions{margin-top:8px}.rankaction{padding:10px 7px}}
 .empty{text-align:center;padding:65px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted)}.empty h3{font:600 25px 'Playfair Display';color:var(--cream);margin:0 0 7px}
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
@@ -208,7 +209,8 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 </div>
 <div class="actions" id="searchActions"><button class="secondary" id="add">+ Add Course</button></div>
 </div></div>
-<div class="backdrop" id="addmodal"><div class="modal"><h3>Add a course</h3><div class="sub">Add anything that isn't in the pre-loaded lists.</div><div class="group"><label>Course Name</label><input id="newname" placeholder="Course name"></div><div class="group"><label>Location</label><input id="newloc" placeholder="City, State / Country"></div><div class="group"><label>Logo URL — optional</label><input id="newlogo" placeholder="https://..."></div><div class="actions"><button class="secondary" id="addclose">Cancel</button><button class="primary" id="save">Add & Log Round</button></div></div></div>
+<div class="backdrop" id="addmodal"><div class="modal"><h3>Add a course</h3><div class="sub">Add anything that isn't in the pre-loaded lists.</div><div class="group"><label>Course Name</label><input id="newname" placeholder="Course name"></div><div class="group"><label>Location</label><input id="newloc" placeholder="City, State / Country"></div><div class="group"><label>Logo URL — optional</label><input id="newlogo" placeholder="https://..."></div><div class="group"><label>Personal Rank — optional</label><input id="newrank" type="number" inputmode="numeric" min="1" step="1" placeholder="Leave blank for bottom"></div><div class="actions"><button class="secondary" id="addclose">Cancel</button><button class="primary" id="save">Add & Log Round</button></div></div></div>
+<div class="backdrop" id="rankmodal"><div class="modal"><div class="modalhead"><div><div class="eyebrow">Personal ranking</div><h3>Move Course</h3></div><button class="modalclose" id="rankClose" aria-label="Close">×</button></div><div class="rankmodal-course"><strong id="rankCourseName"></strong><span id="rankCourseLoc"></span></div><div id="rankChoose"><div class="actions" style="margin-top:0"><button class="secondary" id="moveTop">Move to Top</button><button class="primary" id="moveCustom">Move to…</button></div></div><div id="rankCustom" style="display:none"><div class="group"><label>Move to rank</label><input class="rankmoveinput" id="rankInput" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 5"><div class="rankmovehint">Enter any rank from 1 to the bottom. Other courses will shift automatically.</div></div><div class="actions"><button class="secondary" id="rankCancel">Cancel</button><button class="primary" id="rankSave">Move Course</button></div></div></div></div>
 <div class="backdrop" id="authmodal">
 <div class="modal authmodal">
 <div class="modalhead"><div><div class="eyebrow">Your account</div><h3 id="authTitle">Sign in</h3></div><button class="modalclose" id="authClose" aria-label="Close">×</button></div>
@@ -606,7 +608,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T14:05:00-04:00";
-const APP_VERSION="v44";
+const APP_VERSION="v45";
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
   if(!el)return;
@@ -787,13 +789,45 @@ function renderTop(){
  document.getElementById("fill").style.width=Math.min(100,(played/total)*100)+"%";
  document.getElementById("remain").textContent=(total-played)+" remaining";
 }
+let rankEditingId=null;
+function openRankModal(id){
+ const c=get(id); if(!c)return;
+ rankEditingId=id;
+ document.getElementById('rankCourseName').textContent=c.name;
+ document.getElementById('rankCourseLoc').textContent=c.location||'';
+ document.getElementById('rankChoose').style.display='block';
+ document.getElementById('rankCustom').style.display='none';
+ document.getElementById('rankInput').value=state.myList.indexOf(id)+1;
+ document.getElementById('rankmodal').classList.add('open');
+}
+function closeRankModal(){rankEditingId=null;document.getElementById('rankmodal').classList.remove('open')}
+async function moveCourseToRank(id,requested){
+ const oldIndex=state.myList.indexOf(id); if(oldIndex<0)return;
+ let rank=Math.floor(Number(requested));
+ if(!Number.isFinite(rank))return;
+ state.myList.splice(oldIndex,1);
+ rank=Math.max(1,Math.min(rank,state.myList.length+1));
+ state.myList.splice(rank-1,0,id);
+ save();renderTop();renderMine();
+ if(supabaseClient&&currentUser){try{await syncAllToCloud()}catch(e){console.warn(e);toast('Moved here; cloud update failed')}}
+ toast(rank===1?'Moved to #1':`Moved to #${rank}`);
+}
+document.getElementById('rankClose').onclick=closeRankModal;
+document.getElementById('rankmodal').addEventListener('click',e=>{if(e.target.id==='rankmodal')closeRankModal()});
+document.getElementById('moveTop').onclick=async()=>{if(rankEditingId){const id=rankEditingId;closeRankModal();await moveCourseToRank(id,1)}};
+document.getElementById('moveCustom').onclick=()=>{document.getElementById('rankChoose').style.display='none';document.getElementById('rankCustom').style.display='block';setTimeout(()=>{const x=document.getElementById('rankInput');x.focus();x.select()},60)};
+document.getElementById('rankCancel').onclick=()=>{document.getElementById('rankCustom').style.display='none';document.getElementById('rankChoose').style.display='block'};
+document.getElementById('rankSave').onclick=async()=>{const id=rankEditingId,rank=document.getElementById('rankInput').value;if(!id)return;closeRankModal();await moveCourseToRank(id,rank)};
+document.getElementById('rankInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('rankSave').click()});
+
 function renderMine(){
- let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map(get).filter(Boolean).filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
+ let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map((id,idx)=>({c:get(id),idx})).filter(x=>x.c).filter(x=>x.c.name.toLowerCase().includes(q)||x.c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
- arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong id="count-${c.id}">${count(c.id)}×</strong><br>played<button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
+ arr.forEach(({c,idx})=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${idx+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong id="count-${c.id}">${count(c.id)}×</strong><br>played<button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
  addTouchDrag(el,box,c.id);
  const edit=el.querySelector("[data-edit-count]");
  edit.onclick=e=>{e.preventDefault();e.stopPropagation();startCountEdit(c.id,el.querySelector(".count"));};
+ el.addEventListener('click',e=>{if(e.target.closest('.handle,.editcount,button,input,a'))return;openRankModal(c.id)});
  box.appendChild(el)});
 }
 
@@ -1073,7 +1107,9 @@ async function logRounds(id,qty){
 }
 document.getElementById("add").onclick=()=>{modal.classList.remove("open");addmodal.classList.add("open");document.getElementById("newname").focus()};
 document.getElementById("addclose").onclick=()=>addmodal.classList.remove("open");
-document.getElementById("save").onclick=async()=>{let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim();if(!name)return toast("Enter a course name");let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};courses.push(c);state.played[c.id]=1;state.myList.push(c.id);save();if(supabaseClient&&currentUser){try{const dbid=await ensureDbCourse(c);await syncCourseToCloud(c.id);await supabaseClient.from("rounds").insert({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()})}catch(e){console.warn(e)}}addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";renderTop();renderMine();toast("Course added and round logged")};
+document.getElementById("save").onclick=async()=>{let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();if(!name)return toast("Enter a course name");let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};courses.push(c);state.played[c.id]=1;
+ let rank=Number(requestedRank);if(!requestedRank||!Number.isFinite(rank)){rank=state.myList.length+1}else{rank=Math.max(1,Math.min(Math.floor(rank),state.myList.length+1))}state.myList.splice(rank-1,0,c.id);save();
+ if(supabaseClient&&currentUser){try{const dbid=await ensureDbCourse(c);await syncCourseToCloud(c.id);await supabaseClient.from("rounds").insert({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()})}catch(e){console.warn(e)}}addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";document.getElementById("newrank").value="";renderTop();renderMine();toast(`Course added at #${rank}`)};
 
 </script>
 
