@@ -68,17 +68,17 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 
 .app-footer{max-width:1120px;margin:28px auto 0;padding:18px 20px 30px;text-align:center;color:rgba(233,225,204,.58);font-size:12px;letter-spacing:.04em}.app-footer span{display:inline-block}
 
-/* Top 100 display: restore the original full-width ranked course rows.
-   The selector bar is a fixed, visible sort bar rather than a horizontal scroller. */
+/* Top 100 display: original full-width ranked course rows.
+   Ranking selector stays on one clean horizontal rail on mobile. */
 #toplist{display:flex;flex-direction:column;gap:7px}
 #toplist .row{min-width:0}
-.seg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:min(100%,760px)}
-.seg button{white-space:nowrap}
+.seg{display:flex;align-items:stretch;gap:3px;width:100%;max-width:900px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:0 0 auto;white-space:nowrap;padding:10px 17px;border-radius:7px}
+@media(min-width:761px){.seg{margin:0 auto}.seg button{flex:1 1 0}}
 @media(max-width:760px){
-  .seg{grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:2px}
-  .seg button{padding:9px 8px;font-size:12px}
-  .seg button:nth-child(4){grid-column:1 / span 2}
-  .seg button:nth-child(5){grid-column:3}
+  .seg{width:100%;margin:0;padding:2px 2px 3px;gap:4px}
+  .seg button{padding:10px 15px;font-size:12px}
   #toplist{display:flex;flex-direction:column;gap:7px}
   #toplist .row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;min-height:64px;padding:9px 10px}
 }
