@@ -249,62 +249,14 @@ const courses = [{"id":"usa1","name":"Pine Valley Golf Club","location":"Pine Va
    Public ranking is static; the API is used only to find the course the user is logging. */
 const public100Names=["Pebble Beach Golf Links", "Pacific Dunes", "Shadow Creek", "Whistling Straits: Straits Course", "Kiawah Island Golf Resort: The Ocean Course", "Pinehurst #2", "Bethpage State Park: Black", "TPC Sawgrass: Stadium", "Bandon Dunes", "Erin Hills Golf Course", "Bandon Trails", "Sand Valley: The Lido", "Spyglass Hill Golf Course", "Old Macdonald", "Pasatiempo Golf Club", "Arcadia Bluffs Golf Club (Bluffs)", "Blackwolf Run: River", "French Lick Resort: Pete Dye Course", "Chambers Bay", "Streamsong Resort: Red", "Sand Valley Golf Resort: Sand Valley", "Manele Golf Course", "Kapalua: Plantation", "Landmand", "Sand Valley Golf Resort: Mammoth Dunes", "Streamsong Resort: Blue", "Bandon Dunes Golf Resort: Sheep Ranch", "Harbour Town Golf Links", "The Highland Course At Primland", "Pinehurst #10", "Gamble Sands", "Pinehurst #4", "Streamsong Resort: Black", "PGA Frisco: Fields Ranch East", "Black Desert Resort", "The Prairie Club (Dunes Course)", "Forest Dunes Golf Club", "Yale Golf Course", "The Greenbrier: Old White", "Torrey Pines Golf Course: South", "Pronghorn Club at Juniper Preserve", "The Omni Homestead Resort: Cascades Course", "Mauna Kea Beach Hotel Golf Course", "Tobacco Road Golf Club", "Sea Island: Seaside", "Big Cedar Lodge: Ozarks National", "The Broadmoor Golf Club: East", "Fallen Oak", "SentryWorld Golf Club", "Cabot Citrus Farms: Karoo", "Sedge Valley at Sand Valley", "CordeValle Golf Club", "Arcadia Bluffs South Course", "The Links At Spanish Bay", "Greywalls at Marquette Golf Club", "Paako Ridge Golf Club", "Wilderness Club", "The Quarry at Giants Ridge", "Wolf Creek Golf Club", "Pine Needles Lodge & Golf Club", "Tetherow Golf Club", "PGA West: Stadium Course", "The Loop: Black", "Nemacolin: Mystic Rock", "Whistling Straits: Irish Course", "The Golf Courses of Lawsonia: Links", "Wynn Golf Club", "The Loop (Red)", "Crosswater Golf Course", "Tullymore Golf Resort", "Red Sky Ranch & Golf Club Fazio Course", "The Wilderness At Fortune Bay", "Makai Golf Club", "Cascata", "Golden Horseshoe Golf Club: Gold Course", "Cog Hill Golf & Country Club: Dubsdread (Course #4)", "Fields Ranch PGA of America Frisco: West Course", "Taconic Golf Club", "The Dunes Golf & Beach Club", "Madden's on Gull Lake: The Classic at Madden's", "Big Cedar Lodge: Payne's Valley", "Mossy Oak Golf Club", "Edgewood Tahoe Golf Course", "Wild Horse Golf Club", "Black Mesa Golf Club", "Trump National Doral: Blue Monster", "Red Sky Ranch & Golf Club Norman Course", "Mid Pines Inn & Golf Club", "The Park at West Palm Beach", "The Prairie Club: Pines Course", "Firestone Country Club: South", "Blackwolf Run: Meadow Valleys", "Quintero Golf Club", "Big Cedar Lodge: Buffalo Ridge", "TPC San Antonio (Oaks)", "Wine Valley Golf Club", "The Pfau Course At Indiana University", "Southern Pines Golf Club", "Reynolds Lake Oconee: Great Waters", "Bay Harbor Golf Club: Links/Quarry"];
 
-const publicAliases=new Map([
-  ["arcadia bluffs golf club","Arcadia Bluffs Golf Club (Bluffs)"],
-  ["arcadia bluffs golf club bluffs","Arcadia Bluffs Golf Club (Bluffs)"],
-  ["arcadia bluffs bluffs","Arcadia Bluffs Golf Club (Bluffs)"],
-  ["pinehurst no 2","Pinehurst #2"],
-  ["pinehurst number 2","Pinehurst #2"],
-  ["pinehurst no 4","Pinehurst #4"],
-  ["pinehurst number 4","Pinehurst #4"],
-  ["pinehurst no 10","Pinehurst #10"],
-  ["pinehurst number 10","Pinehurst #10"],
-  ["forest dunes","Forest Dunes Golf Club"],
-  ["forest dunes golf","Forest Dunes Golf Club"],
-  ["forest dunes golf club","Forest Dunes Golf Club"],
-  ["arcadia bluffs south","Arcadia Bluffs South Course"],
-  ["arcadia bluffs south course","Arcadia Bluffs South Course"],
-  ["whistling straits straits","Whistling Straits: Straits Course"],
-  ["whistling straits irish","Whistling Straits: Irish Course"],
-  ["blackwolf run river","Blackwolf Run: River"],
-  ["blackwolf run meadow valleys","Blackwolf Run: Meadow Valleys"],
-  ["the loop black","The Loop: Black"],
-  ["the loop red","The Loop (Red)"],
-  ["bay harbor golf club links quarry","Bay Harbor Golf Club: Links/Quarry"]
-]);
-const publicNorm=x=>String(x||"").toLowerCase().replace(/&/g," and ").replace(/['’]/g,"").replace(/[^a-z0-9]+/g," ").replace(/\b(golf club|golf course|country club|golf links|golf resort|the)\b/g," ").replace(/\s+/g," ").trim();
 const publicRankByName=new Map(public100Names.map((name,i)=>[name, i+1]));
 const publicNormToName=new Map(public100Names.map(name=>[publicNorm(name),name]));
 for(const c of courses){
-  const direct=publicRankByName.get(c.name);
-  const aliasName=publicAliases.get(publicNorm(c.name));
-  const normalizedName=publicNormToName.get(publicNorm(c.name));
-  const pr=direct|| (aliasName?publicRankByName.get(aliasName):null) || (normalizedName?publicRankByName.get(normalizedName):null);
-  if(pr)c.public=pr;
+  const normalized=publicNorm(c.name);
+  const publicName=publicNormToName.get(normalized);
+  if(publicName)c.public=publicRankByName.get(publicName);
 }
-/* Explicit cross-list canonicalization: one physical course record can carry
-   multiple rankings. This prevents an API round from becoming a duplicate
-   just because Golf Digest uses a slightly different public-list title. */
-const publicCanonicalByName=new Map([
-  ["Arcadia Bluffs Golf Club (Bluffs)","michigan11"],
-  ["Arcadia Bluffs South Course","michigan9"],
-  ["Forest Dunes Golf Club","michigan10"],
-  ["Pinehurst #2","usa32"],
-  ["Whistling Straits: Straits Course","usa26"],
-  ["Bethpage State Park: Black","usa38"],
-  ["TPC Sawgrass: Stadium","usa41"],
-  ["Kiawah Island Golf Resort: The Ocean Course","usa30"],
-  ["Bandon Dunes","usa44"],
-  ["Bandon Trails","usa61"],
-  ["Pebble Beach Golf Links","usa9"],
-  ["Pacific Dunes","usa23"],
-  ["Shadow Creek","usa24"],
-  ["Erin Hills Golf Course","usa49"]
-]);
-for(const [publicName,canonicalId] of publicCanonicalByName){
-  const rank=publicRankByName.get(publicName), c=courses.find(x=>x.id===canonicalId);
-  if(rank&&c)c.public=rank;
-}
+
 const publicExisting=new Set(courses.filter(c=>c.public).map(c=>c.public));
 for(const name of public100Names){
   const rank=publicRankByName.get(name);
@@ -436,51 +388,7 @@ for(const m of michiganPublic100){
   if(!c){c={id:m.id,name:m.name,location:m.location,region:"michigan",world:null,usa:null,public:null,michigan:null};courses.push(c)}
   c.michiganPublic=m.rank;
 }
-const michiganPublicAliases=new Map([
-  ["arcadia bluffs golf club","michigan11"],
-  ["arcadia bluffs bluffs","michigan11"],
-  ["arcadia bluffs south","michigan9"],
-  ["arcadia bluffs south course","michigan9"],
-  ["greywalls","michigan4"],
-  ["greywalls at marquette","michigan4"],
-  ["marquette golf club greywalls","michigan4"],
-  ["the loop","public62"],
-  ["the loop black","public62"],
-  ["the loop red","public62"],
-  ["the loop red and black","public62"],
-  ["forest dunes","michigan10"],
-  ["forest dunes golf","michigan10"],
-  ["forest dunes golf club","michigan10"],
-  ["bay harbor","michigan28"],
-  ["bay harbor golf club links quarry","michigan28"],
-  ["belvedere","michigan8"],
-  ["belvedere golf club","michigan8"],
-  ["eagle eye","michigan37"],
-  ["eagle eye golf club","michigan37"],
-  ["sweetgrass","michigan31"],
-  ["sweetgrass golf club","michigan31"],
-  ["stoatin brae","michigan41"],
-  ["gull lake view stoatin brae","michigan41"],
-  ["american dunes","mipub11"],
-  ["american dunes golf club","mipub11"],
-  ["pilgrims run","michigan32"],
-  ["pilgrims run golf club","michigan32"],
-  ["university of michigan","michigan12"],
-  ["university of michigan golf course","michigan12"],
-  ["tullymore","mipub14"],
-  ["tullymore golf resort","mipub14"],
-  ["sage run","mipub15"],
-  ["sage run golf course","mipub15"],
-  ["harbor shores","mipub16"],
-  ["harbor shores golf club","mipub16"],
-  ["boyne highlands arthur hills","mipub17"],
-  ["hidden river","michigan63"],
-  ["hidden river golf casting club","michigan63"],
-  ["pine mountain timber stone","michigan34"],
-  ["timberstone at pine mountain","michigan34"],
-  ["treetops smith signature","michigan67"],
-  ["treetops smith","michigan67"]
-]);
+
 
 // Rankings are intentionally static. No ranking pages or ranking APIs are fetched.
 // Playing a course only changes the user's local/cloud play counts and personal rank.
@@ -498,149 +406,42 @@ const courseNameNorm=x=>String(x||"").toLowerCase()
 const norm=x=>courseNameNorm(x);
 const normalizeCourseName=x=>String(x||"").trim().replace(/\s+/g," ");
 const slugId=(name,location)=>`api-${courseNameNorm(name)}-${courseNameNorm(location)}`.replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-// Canonical locations for known international courses. These are identity data,
-// not ranking data, and must never be inferred as USA just because a cloud row
-// has an empty/incorrect country field.
-const canonicalCourseLocations=new Map([
-  [norm("Balcomie Links"),"Anstruther, Fife, Scotland"],
-  [norm("Kilspindie Golf Club"),"Aberlady, East Lothian, Scotland"],
-  [norm("Dunbar Golf Club"),"Dunbar, East Lothian, Scotland"],
-  [norm("St. Andrews Links: Jubilee"),"St Andrews, Fife, Scotland"],
-  [norm("The Glen"),"North Berwick, East Lothian, Scotland"]
-]);
-// Normalize these known international course locations in the bundled catalog
-// itself. This happens once at startup, before any cloud/API data is touched.
-for(const c of courses){const canonical=canonicalCourseLocations.get(norm(c.name||""));if(canonical)c.location=canonical;}
-const COURSE_META_CACHE_KEY="theCourseBookCourseMetaV1";
-let courseMetaCache={};
-try{const raw=localStorage.getItem(COURSE_META_CACHE_KEY);const parsed=raw?JSON.parse(raw):{};if(parsed&&typeof parsed==="object")courseMetaCache=parsed}catch(_){ }
-function cacheCourseMeta(c){
-  if(!c||!c.name||String(c.id).startsWith("cloud-"))return;
-  const key=norm(c.name)+"|"+norm(c.location||"");
-  courseMetaCache[key]={id:String(c.id),name:c.name,location:c.location||"",country:c.country||"",region:c.region||"",world:c.world??null,usa:c.usa??null,michigan:c.michigan??null,public:c.public??null,michiganPublic:c.michiganPublic??null,logo:c.logo||"",website:c.website||""};
-  try{localStorage.setItem(COURSE_META_CACHE_KEY,JSON.stringify(courseMetaCache))}catch(_){ }
-}
-function cachedCourseMeta(name,location,country){
-  const n=norm(name),loc=norm(location||""),co=norm(country||"");
-  const exact=courseMetaCache[n+"|"+loc];
-  if(exact)return exact;
-  for(const v of Object.values(courseMetaCache)){
-    if(norm(v?.name)!==n)continue;
-    const vc=courseCountryFromLocation(v?.location,v?.country);
-    const dc=courseCountryFromLocation(location,country);
-    if(vc===dc && (!co || vc!=="USA" || dc==="USA"))return v;
-  }
-  return null;
-}
 const byName=new Map();
-const canonicalizeCourse=c=>{
-  if(!c)return c;
-  const canonical=canonicalCourseLocations.get(norm(c.name||""));
-  if(canonical)c.location=canonical;
-  return c;
-};
 const mergeCourse=c=>{
-  const incoming=canonicalizeCourse({...c});
+  if(!c)return null;
+  const incoming={...c,isCustom:!!c.isCustom};
   const existing=courses.find(x=>String(x.id)===String(incoming.id));
-  if(existing){
-    // Course identity/metadata is immutable after first creation. External API
-    // responses are search suggestions only and may never rewrite a Course Book
-    // course that the user already has or that is in the bundled catalog.
-    canonicalizeCourse(existing);
-    cacheCourseMeta(existing);
-    return existing;
-  }
+  if(existing)return existing;
   const nn=norm(incoming.name);
-  const same=courses.find(x=>norm(x.name)===nn && (!incoming.location || !x.location || norm(x.location)===norm(incoming.location)));
-  if(same){
-    canonicalizeCourse(same);
-    cacheCourseMeta(same);
-    return same;
-  }
-  courses.push(incoming); if(nn)byName.set(nn,incoming); cacheCourseMeta(incoming); return incoming;
+  const same=courses.find(x=>nn&&norm(x.name)===nn&&norm(x.location||"")===norm(incoming.location||""));
+  if(same)return same;
+  courses.push(incoming);
+  if(nn&&!byName.has(nn))byName.set(nn,incoming);
+  return incoming;
 };
 for(const c of courses){const nn=norm(c.name);if(nn&&!byName.has(nn))byName.set(nn,c);}
 
-/* Permanent API -> Course Book ranking resolver.
-   IMPORTANT: this lives at global scope so Log a Round can use it too.
-   It considers ALL four ranking fields, including USA Public. */
-const rankingAliasNames=new Map([
-  ["arcadia bluffs","michigan11"],["arcadia bluffs golf","michigan11"],["arcadia bluffs golf club","michigan11"],["arcadia bluffs the bluffs","michigan11"],["arcadia bluffs bluffs","michigan11"],
-  ["arcadia bluffs south","michigan9"],["arcadia bluffs south course","michigan9"],
-  ["forest dunes","michigan10"],["forest dunes golf","michigan10"],["forest dunes golf club","michigan10"],["forest dunes course","michigan10"],
-  ["pinehurst 2","usa32"],["pinehurst no 2","usa32"],["pinehurst number 2","usa32"],["pinehurst 4","usa80"],["pinehurst no 4","usa80"],["pinehurst number 4","usa80"],["pinehurst 10","public30"],["pinehurst no 10","public30"],["pinehurst number 10","public30"],
-  ["bethpage black","usa38"],["bethpage state park black","usa38"],
-  ["whistling straits straits","usa26"],["whistling straits straits course","usa26"],
-  ["blackwolf run river","public17"],["blackwolf run meadow valleys","public91"],
-  ["the loop black","public62"],["the loop red","public67"],
-  ["bay harbor golf club links quarry","public100"]
-]);
-const rankingLayoutWords=new Set(["north","south","east","west","old","new","black","red","championship","straits","irish","river","meadow","valleys","links","dunes","lakes","mountain","ridge","heather","quarry","tribute","fazio","smith","gailes","bear","wolverine","church","strand","stadium","ocean","shore","seaside","east","west"]);
-function rankedCourseRecords(){return courses.filter(c=>c.world||c.usa||c.public||c.michigan||c.michiganPublic)}
-function courseLocationTokens(location){
-  return String(location||"").toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>2)
-}
-function resolveRankedCourse(name,location,opts={}){
-  const n=courseNameNorm(name); if(!n)return null;
-  const aliasId=rankingAliasNames.get(n);
-  if(aliasId){const a=courses.find(c=>String(c.id)===String(aliasId));if(a)return a;}
-  const miPublicId=michiganPublicAliases.get(n);
-  if(miPublicId){const a=courses.find(c=>String(c.id)===String(miPublicId));if(a)return a;}
-  const ranked=rankedCourseRecords();
-  const exact=ranked.find(c=>courseNameNorm(c.name)===n);
-  if(exact)return exact;
-
-  // Also build aliases from every static ranked course. This means the mapping
-  // covers the entire World / USA / Public / Michigan catalog, not just a few
-  // hand-written examples. Layout words remain significant.
-  const directAlias=ranked.find(c=>{
-    const cn=courseNameNorm(c.name);
-    if(cn===n)return true;
-    const a=n.split(" ").filter(x=>x.length>1), b=cn.split(" ").filter(x=>x.length>1);
-    if(!a.length||!b.length)return false;
-    const aa=new Set(a),bb=new Set(b);
-    const shared=[...aa].filter(x=>bb.has(x));
-    const layoutA=a.filter(x=>rankingLayoutWords.has(x));
-    const layoutB=b.filter(x=>rankingLayoutWords.has(x));
-    // Exact token containment catches API suffixes such as "Golf Club" and
-    // directory prefixes/suffixes without merging different layouts.
-    return shared.length>=Math.min(3,Math.min(a.length,b.length)) &&
-      (layoutA.length===0 && layoutB.length===0 || layoutA.every(x=>layoutB.includes(x)) && layoutB.every(x=>layoutA.includes(x)));
-  });
-  if(directAlias)return directAlias;
-
-  const nt=n.split(" ").filter(x=>x.length>1), locTokens=courseLocationTokens(location);
-  let best=null,bestScore=0,second=0;
-  for(const c of ranked){
-    const ct=courseNameNorm(c.name).split(" ").filter(x=>x.length>1);
-    const inter=nt.filter(x=>ct.includes(x));
-    if(!inter.length)continue;
-    const coverageName=inter.length/nt.length;
-    const coverageCourse=inter.length/ct.length;
-    let score=.50*coverageName+.30*coverageCourse;
-    const clTokens=courseLocationTokens(c.location);
-    const sharedLoc=locTokens.filter(x=>clTokens.includes(x));
-    if(sharedLoc.length)score+=Math.min(.14,.07*sharedLoc.length);
-
-    const nl=nt.filter(x=>rankingLayoutWords.has(x));
-    const cll=ct.filter(x=>rankingLayoutWords.has(x));
-    if(nl.length||cll.length){
-      const same=nl.length===cll.length&&nl.every(x=>cll.includes(x));
-      if(!same)score-=.30;
-    }
-    // Penalize obvious conflicts in location/state/country before accepting a
-    // generic name match (important for courses sharing a club name).
-    const locNorm=courseNameNorm(location);
-    const cLocNorm=courseNameNorm(c.location);
-    if(locNorm&&cLocNorm){
-      const lt=locNorm.split(" ").filter(x=>x.length>2), clt=cLocNorm.split(" ").filter(x=>x.length>2);
-      if(lt.some(x=>clt.includes(x)))score+=.06;
-    }
-    if(score>bestScore){second=bestScore;bestScore=score;best=c;}
-    else if(score>second)second=score;
+/* Static catalog identity is data, not a collection of exception rules.
+   External API results may resolve to a bundled course only when name/location
+   identify exactly one catalog record. Otherwise they remain a separate custom
+   course candidate rather than being guessed into an existing course. */
+function exactCatalogCourse(name,location){
+  const n=norm(name);
+  if(!n)return null;
+  const matches=courses.filter(c=>norm(c.name)===n);
+  if(matches.length===1)return matches[0];
+  const city=norm(String(location||"").split(",")[0]);
+  if(city){
+    const located=matches.filter(c=>norm(String(c.location||"").split(",")[0])===city);
+    if(located.length===1)return located[0];
   }
-  const threshold=opts.strict?0.78:0.60;
-  return best&&bestScore>=threshold&&(bestScore-second>=0.035||bestScore>=0.84)?best:null;
+  return null;
+}
+
+function rankedCourseRecords(){return courses.filter(c=>c.world||c.usa||c.public||c.michigan||c.michiganPublic)}
+function resolveRankedCourse(name,location){
+  const c=exactCatalogCourse(name,location);
+  return c&&rankedCourseRecords().includes(c)?c:null;
 }
 
 const EMPTY_STATE={played:{},myList:[]};
@@ -681,27 +482,11 @@ function activateUserState(userId){
   activeStateOwner=String(userId);
 }
 let filter="world",dragged=null,touchDrag=null;
-// Runtime API -> Course Book mapping cache. The ranked course IDs are the
-// permanent identifiers inside this app; API IDs are only aliases for the
-// course the user selected. The mapping is rebuilt deterministically from the
-// static 100-course lists on every load, so an app update cannot orphan rounds.
-const apiCourseMap=new Map();
-let apiAliasCache={};
-try{const rawApiAlias=localStorage.getItem("theCourseBookApiMappings");const parsedApiAlias=rawApiAlias?JSON.parse(rawApiAlias):{};if(parsedApiAlias&&typeof parsedApiAlias==="object")apiAliasCache=parsedApiAlias}catch(_){apiAliasCache={}}
-for(const [apiId,canonicalId] of Object.entries(apiAliasCache)){
-  if(courses.some(c=>String(c.id)===String(canonicalId))) apiCourseMap.set(String(apiId),String(canonicalId));
-}
-function rememberApiMapping(apiId,canonicalId){
-  if(!apiId||!canonicalId)return;
-  apiCourseMap.set(String(apiId),String(canonicalId));
-  apiAliasCache[String(apiId)]=String(canonicalId);
-  try{localStorage.setItem("theCourseBookApiMappings",JSON.stringify(apiAliasCache));}catch(e){}
-}
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T18:00:00-04:00";
-const APP_VERSION="v67";
+const APP_BUILD_UPDATED_AT="2026-09-14T18:30:00-04:00";
+const APP_VERSION="v69";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -717,51 +502,6 @@ const save=()=>{
   updateRefreshedDate();
 };
 const cloudCourseMap=new Map();
-function courseCountryFromLocation(location,country){
-  const explicit=norm(country||"");
-  if(explicit){
-    const e=explicit.replace(/\b(uk|u k)\b/g,"united kingdom");
-    if(/^(usa|us|united states|united states of america)$/.test(e))return "USA";
-    if(/scotland|england|wales|northern ireland|ireland|united kingdom|great britain/.test(e))return "UK";
-    if(/canada/.test(e))return "Canada";
-    if(/australia/.test(e))return "Australia";
-    if(/new zealand/.test(e))return "New Zealand";
-    if(/japan/.test(e))return "Japan";
-    if(/france/.test(e))return "France";
-    if(/spain/.test(e))return "Spain";
-    if(/mexico/.test(e))return "Mexico";
-    if(/dominican republic/.test(e))return "Dominican Republic";
-    if(/south korea|korea/.test(e))return "South Korea";
-    if(/bermuda/.test(e))return "Bermuda";
-    if(/singapore/.test(e))return "Singapore";
-    if(/south africa/.test(e))return "South Africa";
-    if(/netherlands/.test(e))return "Netherlands";
-  }
-  const l=norm(location||"");
-  if(/scotland|england|wales|northern ireland|ireland/.test(l))return "UK";
-  if(/canada/.test(l))return "Canada";
-  if(/australia/.test(l))return "Australia";
-  if(/new zealand/.test(l))return "New Zealand";
-  if(/japan/.test(l))return "Japan";
-  if(/france/.test(l))return "France";
-  if(/spain/.test(l))return "Spain";
-  if(/mexico/.test(l))return "Mexico";
-  if(/dominican republic/.test(l))return "Dominican Republic";
-  if(/south korea|korea/.test(l))return "South Korea";
-  if(/bermuda/.test(l))return "Bermuda";
-  if(/singapore/.test(l))return "Singapore";
-  if(/south africa/.test(l))return "South Africa";
-  if(/netherlands/.test(l))return "Netherlands";
-  return "USA";
-}
-function setAuthStatus(label,signedIn){
-  const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
-  if(a)a.textContent=label; if(b){b.textContent=signedIn?"Sign out":"Sign in"} if(d)d.style.background=signedIn?"#c7aa6b":"#9a7b3f";
-}
-/* v67 data architecture: the bundled Course Book catalog is authoritative.
-   Supabase stores only the user's relationship to a course and round history.
-   A cloud courses UUID is merely a storage key; it never supplies course name,
-   location, ranking, or ordering. Matching is explicit/exact only. */
 const CLOUD_COURSE_MAP_KEY="theCourseBookCloudCourseMapV3";
 let cloudCatalogMap={};
 try{const raw=localStorage.getItem(CLOUD_COURSE_MAP_KEY);const parsed=raw?JSON.parse(raw):{};if(parsed&&typeof parsed==="object")cloudCatalogMap=parsed}catch(_){cloudCatalogMap={}}
@@ -772,113 +512,59 @@ function rememberCloudCatalogId(staticId,dbId){
 }
 function staticCourseForCloudRecord(db){
   if(!db)return null;
-  const nameNorm=norm(db.name||"");
-  if(!nameNorm)return null;
-  // Known international courses have an explicit canonical identity. Resolve
-  // them before considering the cloud location, which may be wrong/incomplete.
-  const canonical=canonicalCourseLocations.get(nameNorm);
-  if(canonical){
-    const canonicalMatches=courses.filter(c=>norm(c.name)===nameNorm);
-    if(canonicalMatches.length===1)return canonicalMatches[0];
-    const canonicalExact=canonicalMatches.find(c=>norm(c.location||"")===norm(canonical));
-    if(canonicalExact)return canonicalExact;
-  }
-  // Explicit aliases are part of the bundled catalog, not fuzzy matching.
-  const aliasId=rankingAliasNames.get(nameNorm)||michiganPublicAliases.get(nameNorm);
-  if(aliasId){const aliased=courses.find(c=>String(c.id)===String(aliasId));if(aliased)return aliased}
-  const exactName=courses.filter(c=>norm(c.name)===nameNorm);
-  if(exactName.length===1)return exactName[0];
-  const dbLoc=norm([db.city,db.state,db.country].filter(Boolean).join(", "));
-  if(dbLoc){
-    const exactLocation=exactName.filter(c=>norm(c.location||"")===dbLoc);
-    if(exactLocation.length===1)return exactLocation[0];
-  }
-  return null;
+  return exactCatalogCourse(db.name,[db.city,db.state,db.country].filter(Boolean).join(", "));
 }
 function staticCourseForId(id){return courses.find(c=>String(c.id)===String(id))||null}
-function isStaticCourse(c){return !!c&&!String(c.id).startsWith("cloud-")&&!String(c.id).startsWith("custom-")}
+function isStaticCourse(c){return !!c&&!c.isCustom}
 async function ensureDbCourse(c,apiMeta=null){
-  if(!supabaseClient||!currentUser)return null;
-  if(!c)return null;
-  if(cloudCourseMap.has(String(c.id)))return cloudCourseMap.get(String(c.id));
+  if(!supabaseClient||!currentUser||!c)return null;
+  const localId=String(c.id);
+  if(cloudCourseMap.has(localId))return cloudCourseMap.get(localId);
 
-  // Static catalog courses use a persistent Course Book ID -> Supabase UUID
-  // mapping. We never fuzzy-match these records and never update their metadata.
   if(isStaticCourse(c)){
-    const known=cloudCatalogMap[String(c.id)];
+    const known=cloudCatalogMap[localId];
     if(known){
-      // A cached mapping is only trusted if the referenced shared course still
-      // matches the immutable Course Book identity/location. Older mappings are
-      // ignored if they point at the wrong cloud record.
-      const check=await supabaseClient.from("courses")
-        .select("id,name,city,state,country").eq("id",String(known)).limit(1);
+      const check=await supabaseClient.from("courses").select("id,name,city,state,country").eq("id",String(known)).limit(1);
       if(check.error)throw check.error;
       const row=check.data?.[0];
-      const rowLoc=row?norm([row.city,row.state,row.country].filter(Boolean).join(", ")):"";
-      const wantedCountry=courseCountryFromLocation(c.location,c.country);
-      const wantedLoc=norm(c.location||"");
-      const rowCountry=row?courseCountryFromLocation(rowLoc,row.country):"";
-      const valid=!!row && norm(row.name)===norm(c.name) && rowCountry===wantedCountry && (rowLoc===wantedLoc || (!rowLoc&&!wantedLoc));
-      if(valid){cloudCourseMap.set(String(c.id),String(known));return String(known);}
-      delete cloudCatalogMap[String(c.id)];
+      if(row&&norm(row.name)===norm(c.name)){
+        cloudCourseMap.set(localId,String(known));
+        return String(known);
+      }
+      delete cloudCatalogMap[localId];
       try{localStorage.setItem(CLOUD_COURSE_MAP_KEY,JSON.stringify(cloudCatalogMap))}catch(_){}
     }
 
-    const {data,error}=await supabaseClient.from("courses")
-      .select("id,name,city,state,country,logo_url,website_url")
-      .eq("name",c.name).limit(25);
+    const {data,error}=await supabaseClient.from("courses").select("id,name,city,state,country").eq("name",c.name).limit(25);
     if(error)throw error;
-    const wantedCountry=courseCountryFromLocation(c.location,c.country);
-    const wantedLoc=norm(c.location||"");
-    const exact=(data||[]).find(r=>{
-      const rloc=norm([r.city,r.state,r.country].filter(Boolean).join(", "));
-      const rcountry=courseCountryFromLocation(rloc,r.country);
-      return rcountry===wantedCountry && (rloc===wantedLoc || (!rloc && !wantedLoc));
-    });
-    if(exact){
-      rememberCloudCatalogId(c.id,exact.id);
-      cloudCourseMap.set(String(c.id),String(exact.id));
-      return String(exact.id);
-    }
+    const wantedCity=norm(String(c.location||"").split(",")[0]);
+    const candidates=data||[];
+    const exact=candidates.length===1?candidates[0]:candidates.find(r=>wantedCity&&norm(r.city||"")===wantedCity);
+    if(exact){rememberCloudCatalogId(localId,exact.id);cloudCourseMap.set(localId,String(exact.id));return String(exact.id)}
 
-    // A static course missing from the shared catalog may be inserted once.
-    // Its metadata comes from the bundled catalog, never from an API/cloud row.
     const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
-    const countryGuess=wantedCountry||c.country||"USA";
-    const stateGuess=countryGuess==="USA" && (locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null;
+    const country=locParts.at(-1)||null;
+    const stateGuess=locParts.length>2?locParts.at(-2):null;
     const cityGuess=locParts.length>1?locParts[0]:null;
-    const ins=await supabaseClient.from("courses").insert({
-      name:c.name,city:cityGuess,state:stateGuess,country:countryGuess,
-      logo_url:c.logo||null,website_url:c.website||null
-    }).select("id").single();
+    const ins=await supabaseClient.from("courses").insert({name:c.name,city:cityGuess,state:stateGuess,country,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
     if(ins.error)throw ins.error;
-    rememberCloudCatalogId(c.id,ins.data.id);
-    cloudCourseMap.set(String(c.id),String(ins.data.id));
+    rememberCloudCatalogId(localId,ins.data.id);
+    cloudCourseMap.set(localId,String(ins.data.id));
     return String(ins.data.id);
   }
 
-  // Custom courses are intentionally user-created. Their cloud row is the
-  // source for that custom record because there is no bundled catalog entry.
   const wantedName=String(c.name||"").trim();
-  const {data,error}=await supabaseClient.from("courses")
-    .select("id,name,city,state,country,logo_url,website_url")
-    .eq("name",wantedName).limit(25);
+  const wantedCity=norm(String(c.location||"").split(",")[0]);
+  const {data,error}=await supabaseClient.from("courses").select("id,name,city,state,country").eq("name",wantedName).limit(25);
   if(error)throw error;
-  const wantedLoc=norm(c.location||"");
-  const wantedCountry=courseCountryFromLocation(c.location,c.country);
-  const exact=(data||[]).find(r=>{
-    const rloc=norm([r.city,r.state,r.country].filter(Boolean).join(", "));
-    return courseCountryFromLocation(rloc,r.country)===wantedCountry && rloc===wantedLoc;
-  });
-  if(exact){cloudCourseMap.set(String(c.id),String(exact.id));return String(exact.id)}
+  const candidates=data||[];
+  const exact=candidates.length===1?candidates[0]:candidates.find(r=>wantedCity&&norm(r.city||"")===wantedCity);
+  if(exact){cloudCourseMap.set(localId,String(exact.id));return String(exact.id)}
 
   const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
-  const countryGuess=wantedCountry||c.country||"USA";
-  const stateGuess=countryGuess==="USA" && (locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null;
-  const cityGuess=locParts.length>1?locParts[0]:null;
-  const ins=await supabaseClient.from("courses").insert({name:wantedName,city:cityGuess,state:stateGuess,country:countryGuess,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
+  const ins=await supabaseClient.from("courses").insert({name:wantedName,city:locParts[0]||null,state:locParts.length>2?locParts.at(-2):null,country:locParts.at(-1)||null,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
   if(ins.error)throw ins.error;
-  cloudCourseMap.set(String(c.id),String(ins.data.id));
+  cloudCourseMap.set(localId,String(ins.data.id));
   return String(ins.data.id);
 }
 async function loadCloudState(){
@@ -903,27 +589,23 @@ async function loadCloudState(){
   function resolveLocal(db){
     if(!db)return null;
 
-    // 1) Explicit static-catalog mapping is always preferred.
+    // 1) A previously recorded Course Book -> Supabase mapping is authoritative.
     const mappedStaticId=Object.entries(cloudCatalogMap).find(([,dbid])=>String(dbid)===String(db.id))?.[0];
     if(mappedStaticId){
       const mapped=staticCourseForId(mappedStaticId);
       if(mapped){cloudCourseMap.set(String(mapped.id),String(db.id));return mapped;}
     }
 
-    // 2) Preserve the Course Book identity already used by this account.
-    // This is critical for older rounds/custom courses whose local ID predates
-    // the cloud catalog row. Never replace that identity with cloud-<uuid>.
+    // 2) Preserve an identity already present in this user's local list.
     const existingLocalIds=[...new Set(state.myList||[])];
-    const localMatches=existingLocalIds.map(id=>get(id)).filter(Boolean).filter(c=>norm(c.name)===norm(db.name||""));
+    const localMatches=existingLocalIds.map(id=>get(id)).filter(Boolean).filter(c=>norm(c.name)===norm(db.name||"")&&norm(c.location||"")===norm([db.city,db.state,db.country].filter(Boolean).join(", ")));
     if(localMatches.length===1){
       const local=localMatches[0];
-      const canonical=canonicalCourseLocations.get(norm(local.name||db.name||""));
-      if(canonical)local.location=canonical;
       cloudCourseMap.set(String(local.id),String(db.id));
       return local;
     }
 
-    // 3) Match the immutable bundled catalog by explicit name/identity.
+    // 3) Match the immutable bundled catalog by exact name/location only.
     const staticMatch=staticCourseForCloudRecord(db);
     if(staticMatch){
       rememberCloudCatalogId(staticMatch.id,db.id);
@@ -931,15 +613,12 @@ async function loadCloudState(){
       return staticMatch;
     }
 
-    // 4) Only genuinely new/custom courses get a cloud-backed local identity.
-    // The cloud row supplies metadata only for these courses.
+    // 4) Unmatched cloud rows are custom courses. Their metadata is reconstructed
+    // as a custom record; bundled courses are never created from cloud metadata.
     const id=`cloud-${db.id}`;
-    const canonicalKnown=canonicalCourseLocations.get(norm(db.name||""));
-    const loc=canonicalKnown||([db.city,db.state,db.country].filter(Boolean).join(", ")||"Location not specified");
-    const country=canonicalKnown?courseCountryFromLocation(canonicalKnown,""):courseCountryFromLocation(loc,db.country);
-    const c={id,name:db.name,location:loc,country,region:country==="USA"?"custom":"international",world:null,usa:null,michigan:null,michiganPublic:null,public:null,logo:db.logo_url||"",website:db.website_url||""};
-    const existing=courses.find(x=>String(x.id)===id);
-    const result=existing||mergeCourse(c);
+    const loc=[db.city,db.state,db.country].filter(Boolean).join(", ")||"Location not specified";
+    const c={id,name:db.name,location:loc,region:"custom",world:null,usa:null,michigan:null,michiganPublic:null,public:null,logo:db.logo_url||"",website:db.website_url||"",isCustom:true};
+    const result=courses.find(x=>String(x.id)===id)||mergeCourse(c);
     cloudCourseMap.set(String(result.id),String(db.id));
     return result;
   }
@@ -1412,18 +1091,15 @@ function apiCourseToRaw(c){
 
 function normalizeApiCourse(c, forceMichigan=false){
   const raw=apiCourseToRaw(c);
-  const ranked=resolveRankedCourse(raw.name,raw.location,{strict:false});
-  if(ranked){
-    rememberApiMapping(c.id||c.course_id||slugId(raw.name,raw.location),ranked.id);
-    return ranked;
-  }
+  const ranked=resolveRankedCourse(raw.name,raw.location);
+  if(ranked)return ranked;
   const canonicalCountry=raw.isUS?"USA":(c.country||c.country_name||c.country_code||"International");
   return mergeCourse({
     id:String(c.id||c.course_id||slugId(raw.name,raw.location)),
     name:raw.displayName,location:raw.location,country:canonicalCountry,
     region:forceMichigan||raw.state.toUpperCase()==="MI"?"michigan":(raw.isUS?"usa":"international"),
     world:null,usa:null,michigan:null,public:null,
-    logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""
+    logo:c.logo_url||c.logo||"",website:c.website||c.website_url||"",isCustom:true
   });
 }
 
@@ -1538,13 +1214,7 @@ async function logRounds(id,qty){
   if(!currentUser||!supabaseClient){toast("Sign in to log a round");return}
   if(activeStateOwner!==String(currentUser.id)){toast("Account is still connecting — try again");return}
   const raw=get(id);if(!raw)return;
-  let target=raw;
-  const apiMapped=apiCourseMap.get(String(raw.id));
-  if(apiMapped && get(apiMapped))target=get(apiMapped);
-  else if(!state.myList.includes(raw.id)){
-    const ranked=resolveRankedCourse(raw.name,raw.location,{strict:false});
-    if(ranked)target=ranked;
-  }
+  const target=resolveRankedCourse(raw.name,raw.location)||raw;
   try{
     const dbid=await ensureDbCourse(target);
     if(!dbid)throw new Error("Course not found in cloud");
@@ -1567,7 +1237,7 @@ document.getElementById("save").onclick=async()=>{
   if(!currentUser||!supabaseClient){toast("Sign in before adding a course");return}
   let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();
   if(!name)return toast("Enter a course name");
-  let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};
+  let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo,isCustom:true};
   let rank=Number(requestedRank);if(!requestedRank||!Number.isFinite(rank))rank=state.myList.length+1;else rank=Math.max(1,Math.min(Math.floor(rank),state.myList.length+1));
   try{
     const dbid=await ensureDbCourse(c);
