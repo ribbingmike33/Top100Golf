@@ -65,6 +65,8 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .editcount{margin-top:5px;border:0;background:transparent;color:#9a7b3f;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.count.editing{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.counteditinput{width:54px;height:30px;border:1px solid #c9b78f;border-radius:7px;background:#fff;color:#173c2f;text-align:center;font:700 15px/1 inherit}.counteditactions{display:flex;gap:6px}.counteditactions button{border:0;background:transparent;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer}.counteditactions .savecount{color:#173c2f}.counteditactions .cancelcount{color:#8a6f45}
 .mine-controls{display:flex;align-items:center;justify-content:flex-start;gap:8px}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto;white-space:nowrap;min-height:43px;padding:0 14px}
 @media(max-width:760px){.mine-controls{flex-direction:row;align-items:center}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto}}
+
+.app-footer{max-width:1120px;margin:28px auto 0;padding:18px 20px 30px;text-align:center;color:rgba(233,225,204,.58);font-size:12px;letter-spacing:.04em}.app-footer span{display:inline-block}
 </style>
 
 <style>
@@ -202,6 +204,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="actions"><button class="secondary" id="authToggle">Create account</button><button class="primary" id="authSubmit">Sign in</button></div>
 </div></div>
 <div class="toast" id="toast"></div>
+<footer class="app-footer"><span id="refreshedDate">Last updated —</span></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -307,6 +310,12 @@ async function loadRankings(){ return; }
 async function loadMichigan(){ return; }
 
 /* Global course identity helpers: used by API search, cloud hydration, and logging. */
+const courseNameNorm=x=>String(x||"").toLowerCase()
+  .replace(/&/g," and ").replace(/[’']/g,"")
+  .replace(/\b(number|no\.?|#)\s*(\d+)\b/g," $2 ")
+  .replace(/[^a-z0-9]+/g," ")
+  .replace(/\b(golf club|golf course|country club|golf links|golf resort|golf|club|course|the)\b/g," ")
+  .replace(/\s+/g," ").trim();
 const norm=x=>courseNameNorm(x);
 const normalizeCourseName=x=>String(x||"").trim().replace(/\s+/g," ");
 const slugId=(name,location)=>`api-${courseNameNorm(name)}-${courseNameNorm(location)}`.replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -324,12 +333,6 @@ for(const c of courses){const nn=norm(c.name);if(nn&&!byName.has(nn))byName.set(
 /* Permanent API -> Course Book ranking resolver.
    IMPORTANT: this lives at global scope so Log a Round can use it too.
    It considers ALL four ranking fields, including USA Public. */
-const courseNameNorm=x=>String(x||"").toLowerCase()
-  .replace(/&/g," and ").replace(/[’']/g,"")
-  .replace(/\b(number|no\.?|#)\s*(\d+)\b/g," $2 ")
-  .replace(/[^a-z0-9]+/g," ")
-  .replace(/\b(golf club|golf course|country club|golf links|golf resort|golf|club|course|the)\b/g," ")
-  .replace(/\s+/g," ").trim();
 const rankingAliasNames=new Map([
   ["arcadia bluffs","michigan11"],["arcadia bluffs golf","michigan11"],["arcadia bluffs golf club","michigan11"],["arcadia bluffs the bluffs","michigan11"],["arcadia bluffs bluffs","michigan11"],
   ["arcadia bluffs south","michigan9"],["arcadia bluffs south course","michigan9"],
@@ -374,7 +377,21 @@ let state=JSON.parse(localStorage.getItem("theCourseBook")||'{"played":{},"myLis
 let filter="world",dragged=null,touchDrag=null;
 const apiCourseMap=new Map();
 let currentUser=null, authMode="signin", syncing=false;
-const save=()=>localStorage.setItem("theCourseBook",JSON.stringify(state));
+function updateRefreshedDate(){
+  const el=document.getElementById("refreshedDate");
+  if(!el)return;
+  const raw=localStorage.getItem("theCourseBookRefreshedAt");
+  if(!raw){el.textContent="Last updated —";return;}
+  const d=new Date(raw);
+  if(Number.isNaN(d.getTime())){el.textContent="Last updated —";return;}
+  el.textContent="Last updated " + d.toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+}
+function markUpdated(){
+  const now=new Date().toISOString();
+  localStorage.setItem("theCourseBookRefreshedAt",now);
+  updateRefreshedDate();
+}
+const save=()=>{localStorage.setItem("theCourseBook",JSON.stringify(state));markUpdated();};
 const cloudCourseMap=new Map();
 function setAuthStatus(label,signedIn){
   const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
@@ -505,6 +522,7 @@ const get=id=>courses.find(c=>c.id==id);
 const count=id=>state.played[id]||0;
 const initials=n=>n.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
 function toast(t){let x=document.getElementById("toast");x.textContent=t;x.classList.add("show");setTimeout(()=>x.classList.remove("show"),1900)}
+updateRefreshedDate();
 
 function renderTop(){
  let q=document.getElementById("topsearch").value.toLowerCase();
@@ -796,6 +814,7 @@ async function migrateAndLoadCloud(){
 // Boot immediately so the app works from an iPhone Home Screen/PWA even when
 // an external ranking source is slow or unavailable. Network data fills in
 // progressively afterward.
+markUpdated();
 renderTop();
 renderMine();
 (async function(){
