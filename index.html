@@ -427,12 +427,18 @@ async function syncCourseToCloud(id){
   const dbid=await ensureDbCourse(c); if(!dbid)return;
   const qty=count(id); const rank=Math.max(1,state.myList.indexOf(id)+1);
   const payload={user_id:currentUser.id,course_id:dbid,times_played:qty,personal_rank:rank,updated_at:new Date().toISOString()};
-  const {error}=await supabaseClient.from("user_courses").upsert(payload,{onConflict:"user_id,course_id"});
-  if(error){
-    // Schema may not have a composite unique constraint; update then insert as fallback.
-    const u=await supabaseClient.from("user_courses").update(payload).eq("user_id",currentUser.id).eq("course_id",dbid);
+  // Do not rely on a composite UNIQUE constraint. The schema used by this app
+  // does not require one. First find an existing row, then update it; otherwise insert.
+  const existing=await supabaseClient.from("user_courses")
+    .select("id").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
+  if(existing.error)throw existing.error;
+  if((existing.data||[]).length){
+    const u=await supabaseClient.from("user_courses")
+      .update(payload).eq("user_id",currentUser.id).eq("course_id",dbid);
     if(u.error)throw u.error;
-    if(!u.data){const ins=await supabaseClient.from("user_courses").insert(payload);if(ins.error)throw ins.error;}
+  }else{
+    const ins=await supabaseClient.from("user_courses").insert(payload);
+    if(ins.error)throw ins.error;
   }
 }
 async function syncAllToCloud(){
@@ -441,7 +447,7 @@ async function syncAllToCloud(){
     const ids=[...new Set([...state.myList,...Object.keys(state.played)])];
     for(const id of ids){if(count(id)>0||state.myList.includes(id))await syncCourseToCloud(id)}
     localStorage.setItem("theCourseBookMigrated_"+currentUser.id,"1");
-  }catch(e){console.warn("Cloud sync failed",e);toast("Saved locally; cloud sync failed")}finally{syncing=false}
+  }catch(e){console.warn("Cloud sync failed",e);toast("Saved locally; cloud sync failed — check your connection")}finally{syncing=false}
 }
 
 const get=id=>courses.find(c=>c.id==id);
@@ -451,13 +457,13 @@ function toast(t){let x=document.getElementById("toast");x.textContent=t;x.class
 
 function renderTop(){
  let q=document.getElementById("topsearch").value.toLowerCase();
- let arr=courses.filter(c=>filter==="world"?c.world:filter==="usa"?c.usa:filter==="public"?c.public:c.michigan)
+ const rankKey=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":"michigan";
+ let arr=courses.filter(c=>c[rankKey])
  .filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q))
- .sort((a,b)=>(a[filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":"michigan"]||999)-(b[filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":"michigan"]||999))
+ .sort((a,b)=>(a[rankKey]||999)-(b[rankKey]||999))
  .slice(0,100);
  let box=document.getElementById("toplist");box.innerHTML="";
- arr.forEach(c=>{let r=c[filter==="world"?"world":filter==="usa"?"usa":"michigan"];let p=count(c.id);let el=document.createElement("div");el.className="row"+(p?" played-row":"");el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
- const rankKey=filter==="world"?"world":filter==="usa"?"usa":"michigan";
+ arr.forEach(c=>{let r=c[rankKey];let p=count(c.id);let el=document.createElement("div");el.className="row"+(p?" played-row":"");el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
  let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
  document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":"Michigan")+" Top 100";
  document.getElementById("num").textContent=played+" / 100";
@@ -686,7 +692,7 @@ async function logRounds(id,qty){
     try{const dbid=await ensureDbCourse(get(id));await syncCourseToCloud(id);
       const rows=Array.from({length:qty},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
       const {error}=await supabaseClient.from("rounds").insert(rows);if(error)throw error;
-    }catch(e){console.warn(e);toast("Saved locally; cloud sync failed")}
+    }catch(e){console.warn(e);toast("Saved locally; cloud sync failed — check your connection")}
   }
   modal.classList.remove("open");renderTop();renderMine();toast(`${qty} round${qty===1?"":"s"} added`)
 }
