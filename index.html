@@ -346,36 +346,87 @@ const rankingAliasNames=new Map([
 ]);
 const rankingLayoutWords=new Set(["north","south","east","west","old","new","black","red","championship","straits","irish","river","meadow","valleys","links","dunes","lakes","mountain","ridge","heather","quarry","tribute","fazio","smith","gailes","bear","wolverine","church","strand","stadium","ocean","shore","seaside","east","west"]);
 function rankedCourseRecords(){return courses.filter(c=>c.world||c.usa||c.public||c.michigan)}
+function courseLocationTokens(location){
+  return String(location||"").toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>2)
+}
 function resolveRankedCourse(name,location,opts={}){
   const n=courseNameNorm(name); if(!n)return null;
   const aliasId=rankingAliasNames.get(n);
-  if(aliasId){const a=courses.find(c=>c.id===aliasId);if(a)return a;}
+  if(aliasId){const a=courses.find(c=>String(c.id)===String(aliasId));if(a)return a;}
   const ranked=rankedCourseRecords();
   const exact=ranked.find(c=>courseNameNorm(c.name)===n);
   if(exact)return exact;
-  const nt=n.split(" ").filter(x=>x.length>1), loc=String(location||"").toLowerCase();
+
+  // Also build aliases from every static ranked course. This means the mapping
+  // covers the entire World / USA / Public / Michigan catalog, not just a few
+  // hand-written examples. Layout words remain significant.
+  const directAlias=ranked.find(c=>{
+    const cn=courseNameNorm(c.name);
+    if(cn===n)return true;
+    const a=n.split(" ").filter(x=>x.length>1), b=cn.split(" ").filter(x=>x.length>1);
+    if(!a.length||!b.length)return false;
+    const aa=new Set(a),bb=new Set(b);
+    const shared=[...aa].filter(x=>bb.has(x));
+    const layoutA=a.filter(x=>rankingLayoutWords.has(x));
+    const layoutB=b.filter(x=>rankingLayoutWords.has(x));
+    // Exact token containment catches API suffixes such as "Golf Club" and
+    // directory prefixes/suffixes without merging different layouts.
+    return shared.length>=Math.min(3,Math.min(a.length,b.length)) &&
+      (layoutA.length===0 && layoutB.length===0 || layoutA.every(x=>layoutB.includes(x)) && layoutB.every(x=>layoutA.includes(x)));
+  });
+  if(directAlias)return directAlias;
+
+  const nt=n.split(" ").filter(x=>x.length>1), locTokens=courseLocationTokens(location);
   let best=null,bestScore=0,second=0;
   for(const c of ranked){
-    const ct=courseNameNorm(c.name).split(" ").filter(x=>x.length>1), inter=nt.filter(x=>ct.includes(x));
+    const ct=courseNameNorm(c.name).split(" ").filter(x=>x.length>1);
+    const inter=nt.filter(x=>ct.includes(x));
     if(!inter.length)continue;
-    let score=.56*(inter.length/nt.length)+.28*(inter.length/ct.length);
-    const cl=String(c.location||"").toLowerCase();
-    const locParts=loc.split(/[,:\s]+/).filter(x=>x.length>2);
-    if(locParts.some(x=>cl.includes(x)))score+=.08;
-    const nl=nt.filter(x=>rankingLayoutWords.has(x)), cll=ct.filter(x=>rankingLayoutWords.has(x));
+    const coverageName=inter.length/nt.length;
+    const coverageCourse=inter.length/ct.length;
+    let score=.50*coverageName+.30*coverageCourse;
+    const clTokens=courseLocationTokens(c.location);
+    const sharedLoc=locTokens.filter(x=>clTokens.includes(x));
+    if(sharedLoc.length)score+=Math.min(.14,.07*sharedLoc.length);
+
+    const nl=nt.filter(x=>rankingLayoutWords.has(x));
+    const cll=ct.filter(x=>rankingLayoutWords.has(x));
     if(nl.length||cll.length){
       const same=nl.length===cll.length&&nl.every(x=>cll.includes(x));
-      if(!same)score-=.24;
+      if(!same)score-=.30;
     }
-    if(score>bestScore){second=bestScore;bestScore=score;best=c;}else if(score>second)second=score;
+    // Penalize obvious conflicts in location/state/country before accepting a
+    // generic name match (important for courses sharing a club name).
+    const locNorm=courseNameNorm(location);
+    const cLocNorm=courseNameNorm(c.location);
+    if(locNorm&&cLocNorm){
+      const lt=locNorm.split(" ").filter(x=>x.length>2), clt=cLocNorm.split(" ").filter(x=>x.length>2);
+      if(lt.some(x=>clt.includes(x)))score+=.06;
+    }
+    if(score>bestScore){second=bestScore;bestScore=score;best=c;}
+    else if(score>second)second=score;
   }
-  const threshold=opts.strict?0.80:0.64;
-  return best&&bestScore>=threshold&&(bestScore-second>=0.025||bestScore>=0.86)?best:null;
+  const threshold=opts.strict?0.78:0.60;
+  return best&&bestScore>=threshold&&(bestScore-second>=0.035||bestScore>=0.84)?best:null;
 }
 
 let state=JSON.parse(localStorage.getItem("theCourseBook")||'{"played":{},"myList":[]}');
 let filter="world",dragged=null,touchDrag=null;
+// Runtime API -> Course Book mapping cache. The ranked course IDs are the
+// permanent identifiers inside this app; API IDs are only aliases for the
+// course the user selected. The mapping is rebuilt deterministically from the
+// static 100-course lists on every load, so an app update cannot orphan rounds.
 const apiCourseMap=new Map();
+const apiAliasCache=JSON.parse(localStorage.getItem("theCourseBookApiMappings")||"{}");
+for(const [apiId,canonicalId] of Object.entries(apiAliasCache)){
+  if(courses.some(c=>String(c.id)===String(canonicalId))) apiCourseMap.set(String(apiId),String(canonicalId));
+}
+function rememberApiMapping(apiId,canonicalId){
+  if(!apiId||!canonicalId)return;
+  apiCourseMap.set(String(apiId),String(canonicalId));
+  apiAliasCache[String(apiId)]=String(canonicalId);
+  try{localStorage.setItem("theCourseBookApiMappings",JSON.stringify(apiAliasCache));}catch(e){}
+}
 let currentUser=null, authMode="signin", syncing=false;
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
@@ -397,25 +448,47 @@ function setAuthStatus(label,signedIn){
   const a=document.getElementById("authLabel"),b=document.getElementById("authOpen"),d=document.querySelector(".authdot");
   if(a)a.textContent=label; if(b){b.textContent=signedIn?"Sign out":"Sign in"} if(d)d.style.background=signedIn?"#c7aa6b":"#9a7b3f";
 }
-async function ensureDbCourse(c){
+async function ensureDbCourse(c,apiMeta=null){
   if(!supabaseClient||!currentUser)return null;
   if(!c)return null;
   if(cloudCourseMap.has(String(c.id)))return cloudCourseMap.get(String(c.id));
-  const wantedName=norm(c.name), wantedLoc=norm(c.location||"");
+
+  const wantedNames=new Set([norm(c.name)]);
+  const ranked=resolveRankedCourse(c.name,c.location,{strict:false});
+  if(ranked)wantedNames.add(norm(ranked.name));
+  if(apiMeta){
+    [apiMeta.name,apiMeta.course_name,apiMeta.courseName].filter(Boolean).forEach(x=>wantedNames.add(norm(x)));
+  }
+  const wantedLoc=norm(c.location||"");
   const {data,error}=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").limit(5000);
   if(error)throw error;
   let best=null,bestScore=0;
   for(const r of (data||[])){
-    const rn=norm(r.name),rloc=norm([r.city,r.state,r.country].filter(Boolean).join(", "));
-    if(!rn)continue;
-    if(rn===wantedName){best=r;bestScore=1;break;}
-    const a=wantedName.split(" ").filter(x=>x.length>1),b=rn.split(" ").filter(x=>x.length>1),inter=a.filter(x=>b.includes(x));
-    let score=inter.length ? .62*(inter.length/a.length)+.28*(inter.length/b.length) : 0;
-    if(wantedLoc&&rloc){const lt=wantedLoc.split(/[,\s]+/).filter(x=>x.length>2);if(lt.some(x=>rloc.includes(x)))score+=.10;}
+    const names=[r.name].filter(Boolean).map(norm);
+    if(names.some(n=>wantedNames.has(n))){best=r;bestScore=1;break;}
+    const rn=norm(r.name), a=[...wantedNames].filter(Boolean).flatMap(x=>x.split(" ").filter(t=>t.length>1)), b=rn.split(" ").filter(x=>x.length>1);
+    const inter=[...new Set(a)].filter(x=>b.includes(x));
+    let score=inter.length ? .60*(inter.length/Math.max(1,a.length))+.28*(inter.length/Math.max(1,b.length)) : 0;
+    const rloc=norm([r.city,r.state,r.country].filter(Boolean).join(", "));
+    if(wantedLoc&&rloc){const lt=wantedLoc.split(/[ ,]+/).filter(x=>x.length>2);if(lt.some(x=>rloc.includes(x)))score+=.12;}
     if(score>bestScore){bestScore=score;best=r;}
   }
-  if(best&&bestScore>=.72){cloudCourseMap.set(String(c.id),String(best.id));return String(best.id);}
-  const err=new Error(`No matching Supabase course record for "${c.name}"`);err.code="COURSE_NOT_IN_CATALOG";throw err;
+  if(best&&bestScore>=.68){
+    cloudCourseMap.set(String(c.id),String(best.id));
+    return String(best.id);
+  }
+
+  // A ranked course may be present in the static catalog but not yet in the
+  // shared Supabase catalog. Create it once (RLS must permit authenticated
+  // inserts); afterwards all rounds use the same permanent UUID.
+  const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
+  const stateGuess=(locParts[locParts.length-1]||"").length===2?locParts[locParts.length-1]:null;
+  const cityGuess=locParts.length>1?locParts[0]:null;
+  const countryGuess=locParts.length>2?locParts[locParts.length-1]:"USA";
+  const ins=await supabaseClient.from("courses").insert({name:c.name,city:cityGuess,state:stateGuess,country:countryGuess,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
+  if(ins.error)throw ins.error;
+  cloudCourseMap.set(String(c.id),String(ins.data.id));
+  return String(ins.data.id);
 }
 async function loadCloudState(){
   if(!supabaseClient||!currentUser)return false;
@@ -692,7 +765,7 @@ async function searchOpenGolf(q){
       const location=[city,state].filter(Boolean).join(", ") || normalizeCourseName(c.location||"");
       const ranked=resolveRankedCourse(name,location,{strict:false});
       if(ranked){
-        apiCourseMap.set(String(c.id||slugId(name,location)),ranked.id);
+        rememberApiMapping(c.id||slugId(name,location),ranked.id);
         return ranked;
       }
       return mergeCourse({id:String(c.id||slugId(name,location)),name,location,country:c.country||"USA",region:state==="MI"?"michigan":"usa",world:null,usa:null,michigan:null,logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""});
@@ -718,7 +791,8 @@ document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;c
 document.getElementById("timesPlayed").addEventListener("focus",()=>{setTimeout(()=>document.getElementById("confirmLog").scrollIntoView({behavior:"smooth",block:"nearest"}),250)});
 async function logRounds(id,qty){
   const raw=get(id);
-  const mapped=raw?resolveRankedCourse(raw.name,raw.location,{strict:false}):null;
+  const apiMapped=raw&&apiCourseMap.get(String(raw.id)) ? get(apiCourseMap.get(String(raw.id))) : null;
+  const mapped=apiMapped|| (raw?resolveRankedCourse(raw.name,raw.location,{strict:false}):null);
   if(mapped && mapped.id!==id){
     const prior=count(id);
     delete state.played[id];
