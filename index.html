@@ -168,7 +168,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="copy"><div class="eyebrow">The great courses</div><h1>Your Top 100 journey.</h1><p>Track the world's, America's and Michigan's greatest golf courses. See how many you've played and keep building your golf resume.</p></div>
 <div class="card"><div class="statlabel">World Top 100</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
 </div>
-<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="world">World</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="michigan">Michigan</button></div><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div>
+<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="world">World</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="michigan">Michigan - All</button><button data-f="michiganPublic">Michigan - Public</button></div><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div>
 <div class="label">Top courses</div><div class="list" id="toplist"></div>
 </section>
 
@@ -210,6 +210,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <script>
 const SUPABASE_URL = "https://zcblgnjfdrdccbpgmhzr.supabase.co";
 const SUPABASE_KEY = "sb_publishable_fiNqX88e9I8kjyEfrqlk-w_fC0Z1nqE";
+const API_BASE = "https://api.opengolfapi.org/v1";
 // Supabase is optional for this front-end build. Keep the app usable if the CDN is unavailable.
 const supabaseClient = (window.supabase && typeof window.supabase.createClient === "function")
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -303,6 +304,83 @@ courses.push(...staticWorldMissing);
 const staticMichigan100={id:"michigan100",name:"Oakhurst Golf & Country Club",location:"Clarkston, Michigan",region:"michigan",world:null,usa:null,michigan:100};
 if(!courses.some(c=>c.michigan===100)) courses.push(staticMichigan100);
 
+/* Michigan public-access ranking: Golfweek's 2026 Best Courses You Can Play.
+   Golfweek ranks the top 20 public-access courses in Michigan; ties retain the
+   same rank. These records share the same permanent Course Book course IDs
+   where a course already exists, so API logging updates the same course. */
+const michiganPublic20=[
+  {rank:1,name:"Arcadia Bluffs Golf Club",location:"Arcadia, Michigan",id:"michigan11"},
+  {rank:2,name:"Greywalls at Marquette Golf Club",location:"Marquette, Michigan",id:"michigan4"},
+  {rank:3,name:"The Loop: Red & Black",location:"Roscommon, Michigan",id:"public62"},
+  {rank:4,name:"Arcadia Bluffs: South",location:"Arcadia, Michigan",id:"michigan9"},
+  {rank:4,name:"Forest Dunes Golf Club",location:"Roscommon, Michigan",id:"michigan10"},
+  {rank:6,name:"Bay Harbor Golf Club: Links/Quarry",location:"Petoskey, Michigan",id:"michigan28"},
+  {rank:7,name:"Belvedere Golf Club",location:"Charlevoix, Michigan",id:"michigan8"},
+  {rank:8,name:"Eagle Eye Golf Club",location:"Bath, Michigan",id:"michigan37"},
+  {rank:9,name:"Sweetgrass Golf Club",location:"Harris, Michigan",id:"michigan31"},
+  {rank:9,name:"Gull Lake View: Stoatin Brae",location:"Augusta, Michigan",id:"michigan41"},
+  {rank:11,name:"American Dunes Golf Club",location:"Grand Haven, Michigan",id:"mipub11"},
+  {rank:12,name:"Pilgrim's Run Golf Club",location:"Pierson, Michigan",id:"michigan32"},
+  {rank:13,name:"University of Michigan Golf Course",location:"Ann Arbor, Michigan",id:"michigan12"},
+  {rank:14,name:"Tullymore Golf Resort",location:"Stanwood, Michigan",id:"mipub14"},
+  {rank:15,name:"Sage Run Golf Course",location:"Bark River, Michigan",id:"mipub15"},
+  {rank:16,name:"Harbor Shores Golf Club",location:"Benton Harbor, Michigan",id:"mipub16"},
+  {rank:17,name:"Boyne Highlands: Arthur Hills",location:"Harbor Springs, Michigan",id:"mipub17"},
+  {rank:18,name:"Hidden River Golf & Casting Club",location:"Brutus, Michigan",id:"michigan63"},
+  {rank:19,name:"TimberStone at Pine Mountain",location:"Iron Mountain, Michigan",id:"michigan34"},
+  {rank:20,name:"Treetops Resort: Smith",location:"Gaylord, Michigan",id:"michigan67"}
+];
+for(const m of michiganPublic20){
+  let c=courses.find(x=>x.id===m.id);
+  if(!c){c={id:m.id,name:m.name,location:m.location,region:"michigan",world:null,usa:null,public:null,michigan:null};courses.push(c)}
+  c.michiganPublic=m.rank;
+}
+const michiganPublicAliases=new Map([
+  ["arcadia bluffs golf club","michigan11"],
+  ["arcadia bluffs bluffs","michigan11"],
+  ["arcadia bluffs south","michigan9"],
+  ["arcadia bluffs south course","michigan9"],
+  ["greywalls","michigan4"],
+  ["greywalls at marquette","michigan4"],
+  ["marquette golf club greywalls","michigan4"],
+  ["the loop","public62"],
+  ["the loop black","public62"],
+  ["the loop red","public62"],
+  ["the loop red and black","public62"],
+  ["forest dunes","michigan10"],
+  ["forest dunes golf","michigan10"],
+  ["forest dunes golf club","michigan10"],
+  ["bay harbor","michigan28"],
+  ["bay harbor golf club links quarry","michigan28"],
+  ["belvedere","michigan8"],
+  ["belvedere golf club","michigan8"],
+  ["eagle eye","michigan37"],
+  ["eagle eye golf club","michigan37"],
+  ["sweetgrass","michigan31"],
+  ["sweetgrass golf club","michigan31"],
+  ["stoatin brae","michigan41"],
+  ["gull lake view stoatin brae","michigan41"],
+  ["american dunes","mipub11"],
+  ["american dunes golf club","mipub11"],
+  ["pilgrims run","michigan32"],
+  ["pilgrims run golf club","michigan32"],
+  ["university of michigan","michigan12"],
+  ["university of michigan golf course","michigan12"],
+  ["tullymore","mipub14"],
+  ["tullymore golf resort","mipub14"],
+  ["sage run","mipub15"],
+  ["sage run golf course","mipub15"],
+  ["harbor shores","mipub16"],
+  ["harbor shores golf club","mipub16"],
+  ["boyne highlands arthur hills","mipub17"],
+  ["hidden river","michigan63"],
+  ["hidden river golf casting club","michigan63"],
+  ["pine mountain timber stone","michigan34"],
+  ["timberstone at pine mountain","michigan34"],
+  ["treetops smith signature","michigan67"],
+  ["treetops smith","michigan67"]
+]);
+
 // Rankings are intentionally static. No ranking pages or ranking APIs are fetched.
 // Playing a course only changes the user's local/cloud play counts and personal rank.
 const rankingLoaded={world:true,usa:true,michigan:true};
@@ -345,7 +423,7 @@ const rankingAliasNames=new Map([
   ["bay harbor golf club links quarry","public100"]
 ]);
 const rankingLayoutWords=new Set(["north","south","east","west","old","new","black","red","championship","straits","irish","river","meadow","valleys","links","dunes","lakes","mountain","ridge","heather","quarry","tribute","fazio","smith","gailes","bear","wolverine","church","strand","stadium","ocean","shore","seaside","east","west"]);
-function rankedCourseRecords(){return courses.filter(c=>c.world||c.usa||c.public||c.michigan)}
+function rankedCourseRecords(){return courses.filter(c=>c.world||c.usa||c.public||c.michigan||c.michiganPublic)}
 function courseLocationTokens(location){
   return String(location||"").toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>2)
 }
@@ -353,6 +431,8 @@ function resolveRankedCourse(name,location,opts={}){
   const n=courseNameNorm(name); if(!n)return null;
   const aliasId=rankingAliasNames.get(n);
   if(aliasId){const a=courses.find(c=>String(c.id)===String(aliasId));if(a)return a;}
+  const miPublicId=michiganPublicAliases.get(n);
+  if(miPublicId){const a=courses.find(c=>String(c.id)===String(miPublicId));if(a)return a;}
   const ranked=rankedCourseRecords();
   const exact=ranked.find(c=>courseNameNorm(c.name)===n);
   if(exact)return exact;
@@ -599,7 +679,7 @@ updateRefreshedDate();
 
 function renderTop(){
  let q=document.getElementById("topsearch").value.toLowerCase();
- const rankKey=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":"michigan";
+ const rankKey=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":filter==="michiganPublic"?"michiganPublic":"michigan";
  let arr=courses.filter(c=>c[rankKey])
  .filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q))
  .sort((a,b)=>(a[rankKey]||999)-(b[rankKey]||999))
@@ -607,10 +687,10 @@ function renderTop(){
  let box=document.getElementById("toplist");box.innerHTML="";
  arr.forEach(c=>{let r=c[rankKey];let p=count(c.id);let el=document.createElement("div");el.className="row"+(p?" played-row":"");el.innerHTML=`<div class="rank">#${r}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="meta">${p?`<span class="check">✓</span><span class="played">Played ${p}×</span>`:"Not played"}</div><div class="gold">${p?p+" round"+(p==1?"":"s"):""}</div>`;box.appendChild(el)});
  let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
- document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":"Michigan")+" Top 100";
- document.getElementById("num").textContent=played+" / 100";
+ document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":filter==="michiganPublic"?"Michigan - Public":"Michigan - All")+(filter==="michiganPublic"?" Top 20":" Top 100");
+ const total=filter==="michiganPublic"?20:100;
+ document.getElementById("num").textContent=played+" / "+total;
  document.getElementById("fill").style.width=played+"%";
- const total=100;
  document.getElementById("totalLabel").textContent="/ "+total+" played";
  document.getElementById("fill").style.width=Math.min(100,(played/total)*100)+"%";
  document.getElementById("remain").textContent=(total-played)+" remaining";
@@ -753,24 +833,93 @@ document.getElementById("modalsearch").oninput=renderResults;
 let remoteSearchTimer=null;
 async function searchOpenGolf(q){
   q=q.trim(); if(q.length<2) return [];
+  const normalizeApiCourse=(c)=>{
+    const name=normalizeCourseName(c.name||c.course_name||c.title||"Unnamed Course");
+    const city=normalizeCourseName(c.city||"");
+    const state=normalizeCourseName(c.state||c.state_code||"");
+    const location=[city,state].filter(Boolean).join(", ") || normalizeCourseName(c.location||c.address||"");
+    const ranked=resolveRankedCourse(name,location,{strict:false});
+    if(ranked){
+      rememberApiMapping(c.id||c.course_id||slugId(name,location),ranked.id);
+      return ranked;
+    }
+    return mergeCourse({
+      id:String(c.id||c.course_id||slugId(name,location)),
+      name,location,country:c.country||"USA",
+      region:state.toUpperCase()==="MI"?"michigan":"usa",
+      world:null,usa:null,michigan:null,public:null,
+      logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""
+    });
+  };
   try{
+    // First use the normal API search. This preserves access to courses outside
+    // Michigan while also allowing the ranked-course resolver to recognize them.
     const res=await fetch(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50`);
     if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
     const data=await res.json();
     const list=Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
-    return list.map((c,i)=>{
-      const name=normalizeCourseName(c.name||c.course_name||"Unnamed Course");
-      const city=normalizeCourseName(c.city||"");
-      const state=normalizeCourseName(c.state||c.state_code||"");
-      const location=[city,state].filter(Boolean).join(", ") || normalizeCourseName(c.location||"");
-      const ranked=resolveRankedCourse(name,location,{strict:false});
-      if(ranked){
-        rememberApiMapping(c.id||slugId(name,location),ranked.id);
-        return ranked;
-      }
-      return mergeCourse({id:String(c.id||slugId(name,location)),name,location,country:c.country||"USA",region:state==="MI"?"michigan":"usa",world:null,usa:null,michigan:null,logo:c.logo_url||c.logo||"",website:c.website||c.website_url||""});
+    const normalized=list.map(normalizeApiCourse);
+
+    // OpenGolfAPI caps search results at 50. Michigan alone has 800+ courses,
+    // so a name can fall outside the generic search result set. If the generic
+    // search doesn't give us a useful Michigan result, query the complete
+    // Michigan state directory and filter it locally. This guarantees that a
+    // Michigan course in the API can be found even when it isn't in the first
+    // 50 generic search results.
+    const genericUseful=normalized.some(c=>{
+      const loc=String(c.location||"").toLowerCase();
+      return loc.includes("mi") || loc.includes("michigan") || c.michigan || c.usa || c.world || c.public;
     });
-  }catch(e){ console.warn("OpenGolfAPI search failed",e); return []; }
+    if(!genericUseful){
+      try{
+        const miRes=await fetch(`${API_BASE}/courses/state/MI`);
+        if(miRes.ok){
+          const miData=await miRes.json();
+          const miList=Array.isArray(miData)?miData:(miData.courses||miData.data||miData.results||[]);
+          const nq=courseNameNorm(q);
+          const qTokens=nq.split(" ").filter(Boolean);
+          const scored=miList.map(c=>{
+            const n=courseNameNorm(c.name||c.course_name||c.title||"");
+            const city=courseNameNorm(c.city||"");
+            const loc=[city,"mi"].filter(Boolean).join(" ");
+            const tokens=n.split(" ");
+            const shared=qTokens.filter(x=>tokens.includes(x)).length;
+            const starts=n.startsWith(nq)?100:0;
+            const includes=n.includes(nq)?50:0;
+            return {c,score:starts+includes+shared*10};
+          }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,25).map(x=>normalizeApiCourse(x.c));
+          const seen=new Set(normalized.map(c=>String(c.id)));
+          for(const c of scored) if(!seen.has(String(c.id))){normalized.push(c);seen.add(String(c.id));}
+        }
+      }catch(miErr){ console.warn("OpenGolfAPI Michigan fallback failed",miErr); }
+    }
+    return normalized;
+  }catch(e){
+    console.warn("OpenGolfAPI search failed",e);
+    // If the generic search itself fails, still try the Michigan directory so
+    // Michigan logging does not silently fail because of a 50-result/search issue.
+    try{
+      const miRes=await fetch(`${API_BASE}/courses/state/MI`);
+      if(miRes.ok){
+        const miData=await miRes.json();
+        const miList=Array.isArray(miData)?miData:(miData.courses||miData.data||miData.results||[]);
+        const nq=courseNameNorm(q), qTokens=nq.split(" ").filter(Boolean);
+        return miList.map(c=>{
+          const n=courseNameNorm(c.name||c.course_name||c.title||"");
+          const shared=qTokens.filter(x=>n.split(" ").includes(x)).length;
+          return {c,score:(n===nq?100:0)+(n.includes(nq)?50:0)+shared*10};
+        }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,25).map(x=>{
+          const c=x.c; const name=normalizeCourseName(c.name||c.course_name||c.title||"");
+          const city=normalizeCourseName(c.city||"");
+          const location=[city,"MI"].filter(Boolean).join(", ");
+          const ranked=resolveRankedCourse(name,location,{strict:false});
+          if(ranked){rememberApiMapping(c.id||c.course_id||slugId(name,location),ranked.id);return ranked;}
+          return mergeCourse({id:String(c.id||c.course_id||slugId(name,location)),name,location,country:"USA",region:"michigan",world:null,usa:null,public:null,michigan:null});
+        });
+      }
+    }catch(miErr){console.warn("OpenGolfAPI Michigan fallback failed",miErr)}
+    return [];
+  }
 }
 function renderResults(){
   const q=document.getElementById("modalsearch").value.toLowerCase().trim(),box=document.getElementById("results");
