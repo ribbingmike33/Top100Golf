@@ -62,7 +62,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .authbtn{border:1px solid rgba(199,170,107,.35);background:rgba(255,255,255,.035);color:var(--gold);border-radius:999px;padding:7px 12px;font-weight:700;cursor:pointer}
 .authmodal{max-width:430px}.autherror{min-height:18px;color:#c96d63;font-size:12px;margin:-2px 0 10px}
 @media(max-width:760px){.authbar{padding:0 16px;margin-top:8px}.authbar{justify-content:space-between}.authmodal{width:100%;max-width:none;border-radius:20px 20px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom))}}
-</style>
+.editcount{margin-top:5px;border:0;background:transparent;color:#9a7b3f;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.count.editing{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.counteditinput{width:54px;height:30px;border:1px solid #c9b78f;border-radius:7px;background:#fff;color:#173c2f;text-align:center;font:700 15px/1 inherit}.counteditactions{display:flex;gap:6px}.counteditactions button{border:0;background:transparent;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer}.counteditactions .savecount{color:#173c2f}.counteditactions .cancelcount{color:#8a6f45}</style>
 
 <style>
   .course-book-mark{
@@ -258,18 +258,14 @@ async function ensureDbCourse(c){
   cloudCourseMap.set(String(c.id),row.id); return row.id;
 }
 async function loadCloudState(){
-  if(!supabaseClient||!currentUser)return;
-
+  if(!supabaseClient||!currentUser)return false;
   const [{data:userRows,error:userErr},{data:roundRows,error:roundErr}]=await Promise.all([
     supabaseClient.from("user_courses").select("course_id,times_played,personal_rank,first_played,last_played,notes").eq("user_id",currentUser.id).order("personal_rank",{ascending:true}),
-    supabaseClient.from("rounds").select("course_id,played_at").eq("user_id",currentUser.id)
+    supabaseClient.from("rounds").select("course_id,played_at").eq("user_id",currentUser.id).order("played_at",{ascending:true})
   ]);
   if(userErr)throw userErr;
   if(roundErr)throw roundErr;
 
-  // IMPORTANT: app updates must never depend on the hardcoded course IDs matching
-  // the IDs used by older Supabase rows. Resolve every cloud course by its
-  // persistent database record/name, then map it onto the current static catalog.
   const dbIds=[...new Set([...(userRows||[]).map(r=>r.course_id),...(roundRows||[]).map(r=>r.course_id)])].filter(Boolean);
   const dbById=new Map();
   if(dbIds.length){
@@ -278,61 +274,61 @@ async function loadCloudState(){
     (cr.data||[]).forEach(c=>dbById.set(String(c.id),c));
   }
 
-  const key=(name,location="")=>`${String(name||"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}|${String(location||"").trim().toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}`;
-  const byName=new Map(courses.map(c=>[key(c.name),c]));
-  const resolveLocal=(db)=>{
+  const norm=x=>String(x||"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").replace(/\b(golf club|golf course|country club)\b/g," ").replace(/\s+/g," ").trim();
+  const byName=new Map();
+  courses.forEach(c=>{const n=norm(c.name);if(n)byName.set(n,c)});
+
+  function resolveLocal(db){
     if(!db)return null;
     const loc=[db.city,db.state,db.country].filter(Boolean).join(", ");
-    let c=byName.get(key(db.name));
+    const n=norm(db.name);
+    let c=byName.get(n);
+    if(!c&&n)c=courses.find(x=>{const xn=norm(x.name);return xn===n||(xn.length>5&&n.length>5&&(xn.includes(n)||n.includes(xn)))});
     if(!c){
-      const wanted=key(db.name,loc).split("|")[0];
-      c=courses.find(x=>key(x.name).split("|")[0]===wanted);
-    }
-    if(!c){
-      c=mergeCourse({
-        id:`cloud-${db.id}`,
-        name:db.name,
-        location:loc||"Location not specified",
-        country:db.country||"USA",
-        region:(String(db.state||"").toUpperCase()==="MI"?"michigan":"custom"),
-        world:null,usa:null,michigan:null,
-        logo:db.logo_url||"",website:db.website_url||""
-      });
-      byName.set(key(c.name),c);
+      c=mergeCourse({id:`cloud-${db.id}`,name:db.name,location:loc||"Location not specified",country:db.country||"USA",
+        region:(String(db.state||"").toUpperCase()==="MI"?"michigan":"custom"),world:null,usa:null,michigan:null,
+        logo:db.logo_url||"",website:db.website_url||""});
+      byName.set(n,c);
     }
     cloudCourseMap.set(String(c.id),String(db.id));
     return c;
-  };
+  }
 
-  const next={played:{},myList:[]};
+  // Never blank local state while refreshing. Cloud data is merged into the
+  // existing state only after both reads have succeeded.
+  const next={played:{...state.played},myList:[...state.myList].filter(id=>get(id))};
   const rankRows=[];
+
   for(const r of (userRows||[])){
     const c=resolveLocal(dbById.get(String(r.course_id)));
     if(!c)continue;
     const qty=Number(r.times_played)||0;
-    next.played[c.id]=Math.max(next.played[c.id]||0,qty);
+    if(qty>0)next.played[c.id]=Math.max(next.played[c.id]||0,qty);
     rankRows.push({id:c.id,rank:Number(r.personal_rank)||999999});
   }
 
-  // Rounds are the authoritative historical record for play count. This also
-  // recovers rounds from older app versions that may not have had a matching
-  // user_courses row or may use a different local course ID.
   const roundCounts=new Map();
   for(const r of (roundRows||[])){
     const c=resolveLocal(dbById.get(String(r.course_id)));
     if(!c)continue;
     roundCounts.set(c.id,(roundCounts.get(c.id)||0)+1);
   }
-  for(const [id,n] of roundCounts) next.played[id]=Math.max(next.played[id]||0,n);
+  for(const [id,n] of roundCounts)next.played[id]=Math.max(next.played[id]||0,n);
 
-  rankRows.sort((a,b)=>a.rank-b.rank);
-  for(const r of rankRows) if(!next.myList.includes(r.id))next.myList.push(r.id);
-  for(const id of Object.keys(next.played)) if(next.played[id]>0&&!next.myList.includes(id))next.myList.push(id);
+  if(rankRows.length){
+    rankRows.sort((a,b)=>a.rank-b.rank);
+    const ordered=[];
+    for(const r of rankRows)if(!ordered.includes(r.id))ordered.push(r.id);
+    for(const id of next.myList)if(!ordered.includes(id))ordered.push(id);
+    for(const id of Object.keys(next.played))if(next.played[id]>0&&!ordered.includes(id))ordered.push(id);
+    next.myList=ordered;
+  }else{
+    for(const id of Object.keys(next.played))if(next.played[id]>0&&!next.myList.includes(id))next.myList.push(id);
+  }
 
-  // Never replace valid local data with an empty/incomplete cloud result.
-  // Only adopt the cloud state when we actually recovered something.
-  if(next.myList.length || Object.keys(next.played).length) state=next;
+  state=next;
   save();
+  return true;
 }
 async function syncCourseToCloud(id){
   if(!supabaseClient||!currentUser)return;
@@ -383,14 +379,71 @@ function renderTop(){
 function renderMine(){
  let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map(get).filter(Boolean).filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
- arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow played-row";el.draggable=true;el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong>${count(c.id)}×</strong><br>played</div>`;
+ arr.forEach((c,i)=>{let el=document.createElement("div");el.className="rankrow played-row";el.draggable=true;el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${i+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><strong id="count-${c.id}">${count(c.id)}×</strong><br>played<button class="editcount" type="button" aria-label="Edit times played" data-edit-count="${c.id}">Edit</button></div>`;
  el.ondragstart=()=>{dragged=c.id;el.classList.add("dragging")};
  el.ondragend=()=>{dragged=null;el.classList.remove("dragging");box.querySelectorAll(".rankrow.over").forEach(x=>x.classList.remove("over"))};
  el.ondragover=e=>{e.preventDefault();if(dragged!==c.id)el.classList.add("over")};
  el.ondragleave=()=>el.classList.remove("over");
  el.ondrop=e=>{e.preventDefault();el.classList.remove("over");if(dragged===c.id)return;moveCourse(dragged,c.id,e.clientY,el);save();renderMine();if(currentUser)syncAllToCloud();toast("Ranking updated")};
  addTouchDrag(el,box,c.id);
+ const edit=el.querySelector("[data-edit-count]");
+ edit.onclick=e=>{e.preventDefault();e.stopPropagation();startCountEdit(c.id,el.querySelector(".count"));};
  box.appendChild(el)});
+}
+
+async function setPlayedCount(id,newQty){
+  const qty=Math.max(0,Math.floor(Number(newQty)||0));
+  const old=count(id);
+  if(qty===old)return true;
+  state.played[id]=qty;
+  if(qty<=0){
+    delete state.played[id];
+    state.myList=state.myList.filter(x=>x!==id);
+  }else if(!state.myList.includes(id))state.myList.push(id);
+  save(); renderTop(); renderMine();
+  if(supabaseClient&&currentUser){
+    try{
+      const dbid=await ensureDbCourse(get(id));
+      if(!dbid)throw new Error("Course not found in cloud");
+      const {data:rounds,error:roundErr}=await supabaseClient.from("rounds").select("id,played_at").eq("user_id",currentUser.id).eq("course_id",dbid).order("played_at",{ascending:false});
+      if(roundErr)throw roundErr;
+      const rows=rounds||[];
+      if(qty<rows.length){
+        const remove=rows.slice(qty).map(r=>r.id).filter(Boolean);
+        if(remove.length){
+          const del=await supabaseClient.from("rounds").delete().in("id",remove).eq("user_id",currentUser.id);
+          if(del.error)throw del.error;
+        }
+      }else if(qty>rows.length){
+        const addN=qty-rows.length;
+        const inserts=Array.from({length:addN},()=>({user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()}));
+        const ins=await supabaseClient.from("rounds").insert(inserts);
+        if(ins.error)throw ins.error;
+      }
+      await syncCourseToCloud(id);
+    }catch(e){
+      console.warn("Round count cloud update failed",e);
+      toast("Updated here; cloud update failed");
+      return false;
+    }
+  }
+  toast(qty===0?"Course removed":`Rounds updated to ${qty}`);
+  return true;
+}
+function startCountEdit(id,wrap){
+  if(wrap.classList.contains("editing"))return;
+  const old=count(id);
+  wrap.classList.add("editing");
+  wrap.innerHTML=`<input class="counteditinput" type="number" min="0" step="1" inputmode="numeric" value="${old}" aria-label="Times played"><div class="counteditactions"><button class="savecount" type="button">Save</button><button class="cancelcount" type="button">Cancel</button></div>`;
+  const input=wrap.querySelector("input");
+  wrap.querySelector(".savecount").onclick=async()=>{
+    const qty=Math.max(0,parseInt(input.value,10)||0);
+    wrap.innerHTML="Saving…";
+    await setPlayedCount(id,qty);
+  };
+  wrap.querySelector(".cancelcount").onclick=()=>renderMine();
+  input.onkeydown=e=>{if(e.key==="Enter")wrap.querySelector(".savecount").click();if(e.key==="Escape")renderMine()};
+  setTimeout(()=>{input.focus();input.select()},30);
 }
 
 function moveCourse(dragId,targetId,pointerY,targetEl){
@@ -548,18 +601,60 @@ document.getElementById("authSubmit").onclick=async()=>{
  const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value; const err=document.getElementById("authError"); if(!email||password.length<6){err.textContent="Enter an email and a password of at least 6 characters.";return} err.textContent="";
  try{let result=authMode==="signin"?await supabaseClient.auth.signInWithPassword({email,password}):await supabaseClient.auth.signUp({email,password});if(result.error)throw result.error;if(authMode==="signup"&&!result.data.session){err.textContent="Account created. Check your email to confirm it, then sign in.";return}authmodal.classList.remove("open")}catch(e){err.textContent=e.message||"Unable to sign in."}
 };
-if(supabaseClient){supabaseClient.auth.onAuthStateChange(async(_event,session)=>{currentUser=session?.user||null;if(currentUser){setAuthStatus(currentUser.email||"Signed in",true);try{await supabaseClient.from("profiles").upsert({id:currentUser.id,display_name:(currentUser.email||"").split("@")[0]},{onConflict:"id"});await migrateAndLoadCloud()}catch(e){console.warn("Cloud account load failed",e);toast("Could not load cloud data")}}else{setAuthStatus("Not signed in",false);}})}
+if(supabaseClient){
+  let cloudHydratedUserId=null;
+  async function hydrateSignedInUser(session){
+    currentUser=session?.user||null;
+    if(!currentUser){
+      cloudHydratedUserId=null;
+      setAuthStatus("Not signed in",false);
+      renderTop();renderMine();
+      return;
+    }
+    setAuthStatus(currentUser.email||"Signed in",true);
+    if(cloudHydratedUserId===currentUser.id)return;
+    cloudHydratedUserId=currentUser.id;
+    try{
+      await supabaseClient.from("profiles").upsert(
+        {id:currentUser.id,display_name:(currentUser.email||"").split("@")[0]},
+        {onConflict:"id"}
+      );
+      await migrateAndLoadCloud();
+      renderTop();renderMine();
+    }catch(e){
+      console.warn("Cloud account load failed",e);
+      renderTop();renderMine();
+      toast("Cloud refresh failed — local data kept");
+    }
+  }
+
+  supabaseClient.auth.onAuthStateChange((_event,session)=>{
+    setTimeout(()=>hydrateSignedInUser(session),0);
+  });
+
+  // Explicit session restoration on every page/PWA refresh.
+  (async()=>{
+    try{
+      const {data,error}=await supabaseClient.auth.getSession();
+      if(error)throw error;
+      await hydrateSignedInUser(data?.session||null);
+    }catch(e){
+      console.warn("Session restore failed",e);
+      renderTop();renderMine();
+    }
+  })();
+}
+
 async function migrateAndLoadCloud(){
- if(!currentUser)return;
- try{
-   // Load the permanent cloud history first. This is deliberately read-only during startup.
-   // Never overwrite/delete cloud data as part of an HTML app update.
-   await loadCloudState();
-   const {data:cloudRows,error}=await supabaseClient.from("user_courses").select("course_id").eq("user_id",currentUser.id).limit(1);if(error)throw error;
-   const hasCloud=(cloudRows||[]).length>0;
-   if(!hasCloud && !localStorage.getItem("theCourseBookMigrated_"+currentUser.id) && (state.myList.length||Object.keys(state.played).length))await syncAllToCloud();
-   renderTop();renderMine();
- }catch(e){console.warn(e)}
+  if(!currentUser)return;
+  await loadCloudState();
+  const {data:cloudRows,error}=await supabaseClient.from("user_courses").select("course_id").eq("user_id",currentUser.id).limit(1);
+  if(error)throw error;
+  const hasCloud=(cloudRows||[]).length>0;
+  if(!hasCloud && !localStorage.getItem("theCourseBookMigrated_"+currentUser.id) && (state.myList.length||Object.keys(state.played).length)){
+    await syncAllToCloud();
+  }
+  renderTop();renderMine();
 }
 </script>
 
