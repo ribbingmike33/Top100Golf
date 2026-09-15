@@ -498,11 +498,20 @@ function resolveRankedCourse(name,location,opts={}){
     if(!a.length||!b.length)return false;
     const aa=new Set(a),bb=new Set(b);
     const shared=[...aa].filter(x=>bb.has(x));
+    const genericCourseWords=new Set(["golf","club","course","courses","links","resort","country","and","the","at","of"]);
     const layoutA=a.filter(x=>rankingLayoutWords.has(x));
     const layoutB=b.filter(x=>rankingLayoutWords.has(x));
-    // Exact token containment catches API suffixes such as "Golf Club" and
-    // directory prefixes/suffixes without merging different layouts.
-    return shared.length>=Math.min(3,Math.min(a.length,b.length)) &&
+    // Only treat a name as an alias when the entire canonical Course Book name
+    // is present in the API name and every additional API token is generic
+    // course wording. This catches harmless variants such as
+    // "Arcadia Bluffs Golf Club" -> "Arcadia Bluffs", but prevents a
+    // different real-world course such as "American Dunes Golf Club" from
+    // being incorrectly mapped to "Dunes Club" merely because they share
+    // the word "Dunes" and the generic word "Club".
+    const canonicalContained=b.every(x=>aa.has(x));
+    const extraApiTokens=a.filter(x=>!bb.has(x));
+    const extrasAreGeneric=extraApiTokens.every(x=>genericCourseWords.has(x));
+    return canonicalContained && extrasAreGeneric &&
       (layoutA.length===0 && layoutB.length===0 || layoutA.every(x=>layoutB.includes(x)) && layoutB.every(x=>layoutA.includes(x)));
   });
   if(directAlias)return directAlias;
@@ -604,8 +613,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T08:29:06-04:00";
-const APP_VERSION="v97";
+const APP_BUILD_UPDATED_AT="2026-09-15T08:33:10-04:00";
+const APP_VERSION="v98";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
