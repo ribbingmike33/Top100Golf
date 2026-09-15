@@ -103,7 +103,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   .top-controls-right .search{min-width:0;flex:1}
   .top-mine-toggle{min-width:92px;padding:0 10px}
   #toplist{display:flex;flex-direction:column;gap:7px;width:100%}
-  #toplist .top-course-row{grid-template-columns:34px 42px minmax(0,1fr) 112px;gap:9px;min-height:64px;padding:9px 10px}
+  #toplist .top-course-row{grid-template-columns:34px minmax(0,1fr) 112px;gap:9px;min-height:64px;padding:9px 10px}
   #toplist .top-course-row>div{min-width:0}
   #toplist .top-course-row .course{min-width:0;overflow-wrap:anywhere}
   #toplist .top-list-action{min-height:38px;width:100%;padding:7px 7px;font-size:11px}
@@ -1153,14 +1153,28 @@ async function addTopCourseToMyList(id,button){
    const dbid=await ensureDbCourse(c);
    if(!dbid)throw new Error("Course not found in cloud");
    const existing=await supabaseClient.from("user_courses")
-     .select("id").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
+     .select("id,personal_rank,times_played").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
    if(existing.error)throw existing.error;
+
+   // Adding a course from Top 100 means the user has played it. Create one
+   // authenticated round so the course immediately shows 1x played. If a
+   // membership already exists but has no rounds, create the missing first round.
+   const roundCheck=await supabaseClient.from("rounds")
+     .select("id").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
+   if(roundCheck.error)throw roundCheck.error;
+   if(!(roundCheck.data||[]).length){
+     const roundIns=await supabaseClient.from("rounds").insert({
+       user_id:currentUser.id,course_id:dbid,played_at:new Date().toISOString()
+     });
+     if(roundIns.error)throw roundIns.error;
+   }
+
    if(!(existing.data||[]).length){
      // Top 100 membership is a personal-list action, not a catalog-ranking action.
      // The new course always starts at the bottom of this user's list.
      const bottomRank=Math.max(1,state.myList.length+1);
      const ins=await supabaseClient.from("user_courses").insert({
-       user_id:currentUser.id,course_id:dbid,times_played:0,
+       user_id:currentUser.id,course_id:dbid,times_played:1,
        personal_rank:bottomRank,updated_at:new Date().toISOString()
      });
      if(ins.error)throw ins.error;
