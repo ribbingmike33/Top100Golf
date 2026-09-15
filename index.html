@@ -1781,7 +1781,7 @@ async function loadFriendsDirectory(){
   if(!currentUser||!supabaseClient){sel.innerHTML='<option value="">Sign in to see friends…</option>';list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';return}
   sel.disabled=true;list.innerHTML='<div class="friends-loading">Loading friends…</div>';
   try{
-    const {data,error}=await supabaseClient.from("profiles").select("id,email,username,display_name").order("username",{ascending:true});
+    const {data,error}=await supabaseClient.from("profiles").select("id,username,display_name,email").order("username",{ascending:true});
     if(error)throw error;
     friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
     sel.innerHTML='<option value="">Select a friend…</option>';
@@ -1791,7 +1791,8 @@ async function loadFriendsDirectory(){
   }catch(e){
     console.warn("Friends directory load failed",e);
     sel.innerHTML='<option value="">Friends unavailable</option>';
-    list.innerHTML='<div class="friends-empty">The Friends directory is not available yet. Supabase needs a read policy for the profiles and user_courses tables.</div>';
+    const msg=String(e?.message||e||"Unable to load friends");
+    list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
   }finally{sel.disabled=false}
 }
 async function loadFriendList(friendId){
