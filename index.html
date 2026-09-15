@@ -64,7 +64,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 @media(max-width:760px){.authbar{padding:0 16px;margin-top:8px}.authbar{justify-content:space-between}.authmodal{width:100%;max-width:none;border-radius:20px 20px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom))}}
 .editcount{margin-top:5px;border:0;background:transparent;color:#9a7b3f;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.count.editing{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.counteditinput{width:54px;height:30px;border:1px solid #c9b78f;border-radius:7px;background:#fff;color:#173c2f;text-align:center;font:700 15px/1 inherit}.counteditactions{display:flex;gap:6px}.counteditactions button{border:0;background:transparent;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer}.counteditactions .savecount{color:#173c2f}.counteditactions .cancelcount{color:#8a6f45}
 .mine-controls{display:flex;align-items:center;justify-content:flex-start;gap:8px}.mine-controls .search{width:auto;flex:1}
-.top-controls-right{display:flex;align-items:center;gap:8px;width:100%}.top-controls-right .search{flex:1;width:auto}
+.top-controls-right{display:flex;align-items:center;gap:8px;width:100%}.top-controls-right .search{flex:1;width:auto}.top-state-select{height:43px;min-width:145px;padding:0 30px 0 12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.045);color:var(--cream);font-size:12px;font-weight:700;outline:0;color-scheme:dark}.top-state-select:focus{border-color:rgba(199,170,107,.5)}
 .top-mine-toggle{flex:none;min-height:42px;padding:0 15px;border:1px solid rgba(199,170,107,.45);border-radius:10px;background:rgba(255,255,255,.035);color:var(--cream);font:700 12px inherit;cursor:pointer;white-space:nowrap}
 .top-mine-toggle:hover{border-color:rgba(199,170,107,.8);background:rgba(199,170,107,.08)}
 .top-mine-toggle.active{background:var(--gold);border-color:var(--gold);color:#08160f}.mine-controls .refresh-btn{flex:0 0 auto;white-space:nowrap;min-height:43px;padding:0 14px}.mylist-filter{flex:0 0 auto}.mylist-filter button{min-width:76px}.rankrow.mylist-view-only{cursor:default;touch-action:auto}.rankrow.mylist-view-only .roundslink{cursor:default;pointer-events:none}.rankrow.mylist-view-only .handle{cursor:default}.mylist-filter button{user-select:none;-webkit-user-select:none}
@@ -106,7 +106,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 @media(max-width:760px){
   .seg{width:100%;margin:0;padding:2px 2px 3px;gap:4px}
   .seg button{padding:10px 15px;font-size:12px}
-  .top-controls-right{width:100%;display:flex;align-items:stretch;gap:8px}
+  .top-controls-right{width:100%;display:flex;align-items:stretch;gap:8px}.top-state-select{min-width:0;width:145px;flex:0 0 145px}
   .top-controls-right .search{min-width:0;flex:1}
   .top-mine-toggle{min-width:92px;padding:0 10px}
   #toplist{display:flex;flex-direction:column;gap:7px;width:100%}
@@ -221,7 +221,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="copy"><div class="eyebrow">The great courses</div><h1>Your Top 100 journey.</h1><p>Track the world's, America's and Michigan's greatest golf courses. See how many you've played and keep building your golf resume.</p></div>
 <div class="card"><div class="statlabel">Michigan - All Top 100</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
 </div>
-<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="michigan">Michigan - All</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="world">World</button></div><div class="top-controls-right"><button id="topMineToggle" class="top-mine-toggle" type="button" aria-pressed="false">Show mine</button><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div></div>
+<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="michigan">Michigan - All</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="world">World</button></div><div class="top-controls-right"><select id="stateRankSelect" class="top-state-select" aria-label="Best in State"><option value="">Best in State</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select><button id="topMineToggle" class="top-mine-toggle" type="button" aria-pressed="false">Show mine</button><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div></div>
 <div class="label">Top courses</div><div class="list" id="toplist"></div>
 </section>
 
@@ -528,6 +528,7 @@ function activateUserState(userId){
   }
 }
 let filter="michigan",dragged=null,touchDrag=null,showTopMine=false;
+let selectedStateCode="";
 // Runtime API -> Course Book mapping cache. The ranked course IDs are the
 // permanent identifiers inside this app; API IDs are only aliases for the
 // course the user selected. The mapping is rebuilt deterministically from the
@@ -547,8 +548,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v135";
+const APP_BUILD_UPDATED_AT="2026-09-15T19:30:00-04:00";
+const APP_VERSION="v137";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -922,6 +923,70 @@ async function loadCloudState(){
   save();
   return true;
 }
+let cloudCatalogLoaded=false;
+let cloudCatalogLoading=null;
+async function loadCloudCatalog(){
+  if(cloudCatalogLoading)return cloudCatalogLoading;
+  if(!supabaseClient){cloudCatalogLoaded=true;return false;}
+  cloudCatalogLoading=(async()=>{
+    try{
+      // Load the shared USA course catalog once after authentication. This makes
+      // every state available to the app without downloading the full catalog
+      // repeatedly or issuing one request per course.
+      const {data,error}=await supabaseClient
+        .from("courses")
+        .select("id,name,city,state,country,logo_url,website_url")
+        .eq("country","USA")
+        .order("state",{ascending:true})
+        .order("name",{ascending:true})
+        .limit(1000);
+      if(error)throw error;
+      for(const db of (data||[])){
+        if(!db?.id||!db?.name)continue;
+        const existingCloud=courses.find(c=>String(c.id)===`cloud-${db.id}`);
+        if(existingCloud){
+          cloudCourseMap.set(String(existingCloud.id),String(db.id));
+          continue;
+        }
+        // Keep any existing Course Book identity. The state is derived from the
+        // Supabase course record; Michigan is never a hard-coded catalog flag.
+        const mapped=staticCourseForCloudRecord(db);
+        if(mapped){
+          rememberCloudCatalogId(mapped.id,db.id);
+          cloudCourseMap.set(String(mapped.id),String(db.id));
+          continue;
+        }
+        const stateCode=String(db.state||"").trim().toUpperCase();
+        const location=[db.city,db.state,db.country].filter(Boolean).join(", ")||"Location not specified";
+        const c={
+          id:`cloud-${db.id}`,
+          name:String(db.name),
+          location,
+          city:db.city||"",
+          state:db.state||"",
+          country:"USA",
+          // Geographic region is data-driven: any USA course in MI is a
+          // Michigan course; every other USA state remains a normal US course.
+          region:stateCode==="MI"?"michigan":"usa",
+          world:null,usa:null,michigan:null,public:null,
+          logo:db.logo_url||"",website:db.website_url||""
+        };
+        courses.push(c);
+        cloudCourseMap.set(String(c.id),String(db.id));
+      }
+      cloudCatalogLoaded=true;
+      return true;
+    }catch(e){
+      console.warn("Supabase course catalog load failed",e);
+      cloudCatalogLoaded=true;
+      return false;
+    }finally{
+      cloudCatalogLoading=null;
+    }
+  })();
+  return cloudCatalogLoading;
+}
+
 async function syncCourseToCloud(id,{updateRank=false,rankOverride=null}={}){
   if(!supabaseClient||!currentUser||activeStateOwner!==String(currentUser.id))return;
   const c=get(id); if(!c)return;
@@ -1052,6 +1117,7 @@ async function addTopCourseToMyList(id,button){
 let cloudRankings=[];
 let cloudRankingsLoaded=false;
 let cloudRankingsLoading=null;
+const stateRankingRows=()=>cloudRankings.filter(r=>r.ranking_type==="state" && String(r.scope_code||"").toUpperCase()===String(selectedStateCode||"").toUpperCase() && Number(r.rank)>0);
 
 function rankingCourseFromCloud(db){
   if(!db||!db.id||!db.name)return null;
@@ -1088,13 +1154,23 @@ async function loadCloudRankings(){
   if(!supabaseClient){cloudRankingsLoaded=true;return false;}
   cloudRankingsLoading=(async()=>{
     try{
-      const {data:rankingRows,error:rankingErr}=await supabaseClient
-        .from("course_rankings")
-        .select("course_id,ranking_type,rank,source,source_year,scope_code,source_url")
-        .in("ranking_type",["world","usa","usa_public"])
-        .order("ranking_type",{ascending:true})
-        .order("rank",{ascending:true});
-      if(rankingErr)throw rankingErr;
+      // Supabase REST responses are limited to the API page size. State rankings
+      // now exceed 1,000 rows, so read the published ranking table in pages rather
+      // than silently truncating the later states.
+      const rankingRows=[];
+      for(let offset=0;;offset+=1000){
+        const {data:page,error:rankingErr}=await supabaseClient
+          .from("course_rankings")
+          .select("course_id,ranking_type,rank,source,source_year,scope_code,source_url")
+          .in("ranking_type",["world","usa","usa_public","state"])
+          .order("ranking_type",{ascending:true})
+          .order("scope_code",{ascending:true})
+          .order("rank",{ascending:true})
+          .range(offset,offset+999);
+        if(rankingErr)throw rankingErr;
+        rankingRows.push(...(page||[]));
+        if(!page || page.length<1000)break;
+      }
 
       // Fetch ranked courses in small batches. A single giant .in() request can
       // exceed URL/request limits and make an otherwise valid 100-course ranking
@@ -1134,28 +1210,32 @@ async function loadCloudRankings(){
 
 function renderTop(){
  syncTopFilterUI();
+ const stateSelect=document.getElementById("stateRankSelect");
+ if(stateSelect)stateSelect.value=selectedStateCode;
  let q=document.getElementById("topsearch").value.toLowerCase();
- const rankingType=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"usa_public":null;
+ const rankingType=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"usa_public":filter==="state"?"state":null;
  let arr;
- const cloudForType=rankingType
-   ? cloudRankings.filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
-   : [];
- const cloudComplete=cloudForType.length===100 &&
-   new Set(cloudForType.map(r=>Number(r.rank))).size===100 &&
-   cloudForType.every(r=>r?.course?.id&&r?.course?.name);
+ const cloudForType=rankingType==="state"
+   ? stateRankingRows()
+   : rankingType
+     ? cloudRankings.filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
+     : [];
+ const cloudComplete=rankingType==="state"
+   ? !!selectedStateCode && cloudForType.length>0 && new Set(cloudForType.map(r=>Number(r.rank))).size===cloudForType.length && cloudForType.every(r=>r?.course?.id&&r?.course?.name)
+   : cloudForType.length===100 && new Set(cloudForType.map(r=>Number(r.rank))).size===100 && cloudForType.every(r=>r?.course?.id&&r?.course?.name);
  if(rankingType && cloudRankingsLoaded && cloudComplete){
    arr=cloudForType
-     .map(r=>({...r.course, _rankingRank:Number(r.rank)}))
+     .map(r=>({...r.course, _rankingRank:Number(r.rank), _stateCode:r.scope_code||""}))
      .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
      .sort((a,b)=>a._rankingRank-b._rankingRank);
  }else if(rankingType){
    const box=document.getElementById("toplist");
-   if(!cloudRankingsLoaded || !cloudComplete){
+   if(!cloudRankingsLoaded || (rankingType==="state" ? !selectedStateCode || !cloudComplete : !cloudComplete)){
      box.innerHTML='<div class="empty">Loading rankings…</div>';
      return;
    }
    arr=cloudForType
-     .map(r=>({...r.course,_rankingRank:Number(r.rank)}))
+     .map(r=>({...r.course,_rankingRank:Number(r.rank),_stateCode:r.scope_code||""}))
      .filter(c=>c?.name)
      .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
      .sort((a,b)=>a._rankingRank-b._rankingRank);
@@ -1188,8 +1268,8 @@ function renderTop(){
    ? cloudForType
    : arr;
  const played=top.filter(r=>count(r.course?r.course.id:r.id)).length;
- document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":"Michigan - All")+" Top 100";
- const total=100;
+ document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":filter==="state"?(stateDisplayName(selectedStateCode)+" Best in State"):"Michigan - All")+(filter==="state"?"":" Top 100");
+ const total=filter==="state"?cloudForType.length:100;
  document.getElementById("num").textContent=played+" / "+total;
  document.getElementById("totalLabel").textContent="/ "+total+" played";
  document.getElementById("fill").style.width=Math.min(100,(played/total)*100)+"%";
@@ -1569,10 +1649,24 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
 document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
   filter=b.dataset.f;
+  selectedStateCode="";
   rankingMetadataRun++;
   syncTopFilterUI();
   if(filter!=="michigan" && supabaseClient && !cloudRankingsLoaded)loadCloudRankings().then(()=>{if(document.getElementById("top")?.classList.contains("active")){renderTop();renderMine();}});
   const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();renderTop();
+});
+document.getElementById("stateRankSelect")?.addEventListener("change",e=>{
+  const code=String(e.target.value||"").toUpperCase();
+  if(!code){selectedStateCode="";filter="michigan";syncTopFilterUI();renderTop();return;}
+  selectedStateCode=code;
+  filter="state";
+  document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
+  rankingMetadataRun++;
+  const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();
+  if(supabaseClient && !cloudRankingsLoaded){
+    renderTop();
+    loadCloudRankings().then(()=>{if(document.getElementById("top")?.classList.contains("active"))renderTop();});
+  }else renderTop();
 });
 document.getElementById("topMineToggle").onclick=()=>{
   showTopMine=!showTopMine;
@@ -1842,7 +1936,9 @@ function searchResultCourse(c,source){
 function renderSearchButton(box,c){
   const id=String(c.id),display=searchDisplayOverrides.get(id)||c;
   let b=document.createElement("button");b.className="result";
-  b.innerHTML=`<strong>${display.name}</strong><small>${display.location||""}${display.michigan?` · Michigan #${display.michigan}`:""}${display.usa?` · USA #${display.usa}`:""}${display.world?` · World #${display.world}`:""}${display.public?` · Public #${display.public}`:""}</small>`;
+  const stateRank=cloudRankings.find(r=>r.ranking_type==="state" && String(r.scope_code||"").toUpperCase()!=="MI" && String(r.course?.id)===id);
+ const stateTag=stateRank?` · ${stateDisplayName(stateRank.scope_code)} #${stateRank.rank}`:"";
+ b.innerHTML=`<strong>${display.name}</strong><small>${display.location||""}${stateTag}${display.michigan?` · Michigan #${display.michigan}`:""}${display.usa?` · USA #${display.usa}`:""}${display.world?` · World #${display.world}`:""}${display.public?` · Public #${display.public}`:""}</small>`;
   b.onclick=()=>selectCourse(id);
   box.appendChild(b);
 }
@@ -2317,6 +2413,10 @@ if(supabaseClient){
 async function migrateAndLoadCloud(){
   if(!currentUser)return;
   await loadCloudState();
+  // The shared course catalog is loaded once per authenticated session so
+  // courses from every USA state are available without changing Friends or
+  // issuing per-course network requests.
+  await loadCloudCatalog();
   const {data:cloudRows,error}=await supabaseClient.from("user_courses").select("course_id").eq("user_id",currentUser.id).limit(1);
   if(error)throw error;
   const hasCloud=(cloudRows||[]).length>0;
