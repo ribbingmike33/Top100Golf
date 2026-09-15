@@ -63,8 +63,9 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .authmodal{max-width:430px}.autherror{min-height:18px;color:#c96d63;font-size:12px;margin:-2px 0 10px}
 @media(max-width:760px){.authbar{padding:0 16px;margin-top:8px}.authbar{justify-content:space-between}.authmodal{width:100%;max-width:none;border-radius:20px 20px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom))}}
 .editcount{margin-top:5px;border:0;background:transparent;color:#9a7b3f;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.count.editing{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.counteditinput{width:54px;height:30px;border:1px solid #c9b78f;border-radius:7px;background:#fff;color:#173c2f;text-align:center;font:700 15px/1 inherit}.counteditactions{display:flex;gap:6px}.counteditactions button{border:0;background:transparent;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer}.counteditactions .savecount{color:#173c2f}.counteditactions .cancelcount{color:#8a6f45}
-.mine-controls{display:flex;align-items:center;justify-content:flex-start;gap:8px}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto;white-space:nowrap;min-height:43px;padding:0 14px}
-@media(max-width:760px){.mine-controls{flex-direction:row;align-items:center}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto}}
+.mine-controls{display:flex;align-items:center;justify-content:flex-start;gap:8px}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto;white-space:nowrap;min-height:43px;padding:0 14px}.mylist-filter{flex:0 0 auto}.mylist-filter button{min-width:76px}.rankrow.mylist-view-only{cursor:default;touch-action:auto}.rankrow.mylist-view-only .roundslink{cursor:default;pointer-events:none}.rankrow.mylist-view-only .handle{cursor:default}.mylist-filter button{user-select:none;-webkit-user-select:none}
+
+@media(max-width:760px){.mine-controls{flex-direction:column;align-items:stretch}.mine-controls .mylist-filter{width:100%;display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}.mine-controls .mylist-filter button{min-width:0;padding:0 8px}.mine-controls .search{width:100%;flex:1}.mine-controls .refresh-btn{flex:0 0 auto}}
 
 .app-footer{max-width:1120px;margin:28px auto 0;padding:18px 20px calc(30px + env(safe-area-inset-bottom));text-align:center;color:rgba(233,225,204,.58);font-size:12px;letter-spacing:.04em}.app-footer span{display:block}.app-refresh{display:block;width:100%;max-width:420px;margin:0 auto 12px;min-height:48px;border:1px solid rgba(199,170,107,.55);border-radius:12px;background:rgba(199,170,107,.10);color:var(--gold);font:700 14px/1 inherit;letter-spacing:.02em;cursor:pointer;-webkit-tap-highlight-color:transparent}.app-refresh:active{transform:scale(.985);background:rgba(199,170,107,.18)}
 
@@ -194,7 +195,15 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 
 <section id="mine" class="page active">
 <div class="listhead"><div><div class="eyebrow">Your courses</div><h2>My List</h2><p>Press and drag a course to change your ranking.</p></div><button class="primary" id="log">+ Log a Round</button></div>
-<div class="controls mine-controls"><div class="search"><span>⌕</span><input id="mysearch" placeholder="Search my courses..."></div></div>
+<div class="controls mine-controls">
+<div class="seg mylist-filter" id="mylistFilter" role="tablist" aria-label="My List region filter">
+<button class="active" type="button" data-myfilter="all">All</button>
+<button type="button" data-myfilter="world">World</button>
+<button type="button" data-myfilter="us">US</button>
+<button type="button" data-myfilter="michigan">Michigan</button>
+</div>
+<div class="search"><span>⌕</span><input id="mysearch" placeholder="Search my courses..."></div>
+</div>
 <div class="label">Personal ranking</div><div class="list" id="mylist"></div>
 </section>
 </main>
@@ -721,7 +730,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T12:00:00-04:00";
-const APP_VERSION="v75";
+const APP_VERSION="v76";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1147,13 +1156,31 @@ document.getElementById('rankInput').addEventListener('keydown',e=>{if(e.key==='
 document.getElementById('editTimesPlayed').onclick=()=>{if(!rankEditingId)return;const id=rankEditingId;closeRankModal();const row=document.querySelector('.rankrow[data-id="'+CSS.escape(String(id))+'"]');if(row)startCountEdit(id,row.querySelector('.count'))};
 document.getElementById('viewDeleteRounds').onclick=()=>{if(!rankEditingId)return;const id=rankEditingId;closeRankModal();openRoundHistory(id)};
 
+let myListFilter="all";
+function myListRegion(c){
+  if(!c)return "world";
+  const loc=String(c.location||"");
+  const country=courseCountryFromLocation(loc,c.country);
+  const michigan=/\bMichigan\b|,\s*MI(?:,|$)/i.test(loc)||String(c.state||"").toUpperCase()==="MI";
+  if(country==="USA")return michigan?"michigan":"us";
+  return "world";
+}
+function isMyListFiltered(){return myListFilter!=="all";}
 function renderMine(){
- let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map((id,idx)=>({c:get(id),idx})).filter(x=>x.c).filter(x=>x.c.name.toLowerCase().includes(q)||x.c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
+ let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map((id,idx)=>({c:get(id),idx})).filter(x=>x.c).filter(x=>myListFilter==="all"||myListRegion(x.c)===myListFilter).filter(x=>x.c.name.toLowerCase().includes(q)||x.c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
  arr.forEach(({c,idx})=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${idx+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><button class="roundslink" type="button" aria-label="View rounds" data-round-history="${c.id}"><strong id="count-${c.id}">${count(c.id)}×</strong><span> played</span></button></div>`;
- addTouchDrag(el,box,c.id);
- const history=el.querySelector("[data-round-history]"); history.onclick=e=>{e.preventDefault();e.stopPropagation();openRoundHistory(c.id)};
- el.addEventListener('click',e=>{if(e.target.closest('.handle,button,input,a'))return;openRankModal(c.id)});
+ if(!isMyListFiltered()){
+   addTouchDrag(el,box,c.id);
+   const history=el.querySelector("[data-round-history]"); history.onclick=e=>{e.preventDefault();e.stopPropagation();openRoundHistory(c.id)};
+   el.addEventListener('click',e=>{if(e.target.closest('.handle,button,input,a'))return;openRankModal(c.id)});
+ }else{
+   el.classList.add("mylist-view-only");
+   el.querySelector(".handle").style.visibility="hidden";
+   const history=el.querySelector("[data-round-history]");
+   if(history)history.disabled=true;
+   el.setAttribute("aria-disabled","true");
+ }
  box.appendChild(el)});
 }
 async function deleteLatestRound(courseId){
@@ -1362,6 +1389,13 @@ function addTouchDrag(el,box,id){
   el.addEventListener('pointerup',async()=>{if(mode==='pointer')await finish(true)});
   el.addEventListener('pointercancel',async()=>{if(mode==='pointer')await finish(false)});
 }
+
+document.querySelectorAll("#mylistFilter button").forEach(b=>b.onclick=()=>{
+  myListFilter=b.dataset.myfilter||"all";
+  document.querySelectorAll("#mylistFilter button").forEach(x=>x.classList.toggle("active",x===b));
+  renderMine();
+  document.getElementById("mysearch").blur();
+});
 
 document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));
