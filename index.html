@@ -553,7 +553,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v130";
+const APP_VERSION="v131";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -688,7 +688,73 @@ function staticCourseForCloudRecord(db){
     // USA. Build a canonical display record from the trusted identity data.
     const parts=canonical.split(",").map(x=>x.trim()).filter(Boolean);
     const country=courseCountryFromLocation(canonical,"");
-    const state=country==="USA" ? (parts[parts.length-1]||"") : "";
+    const public100Names=["Pebble Beach Golf Links", "Pacific Dunes", "Shadow Creek", "Whistling Straits: Straits Course", "Kiawah Island Golf Resort: The Ocean Course", "Pinehurst #2", "Bethpage State Park: Black", "TPC Sawgrass: Stadium", "Bandon Dunes", "Erin Hills Golf Course", "Bandon Trails", "Sand Valley: The Lido", "Spyglass Hill Golf Course", "Old Macdonald", "Pasatiempo Golf Club", "Arcadia Bluffs Golf Club (Bluffs)", "Blackwolf Run: River", "French Lick Resort: Pete Dye Course", "Chambers Bay", "Streamsong Resort: Red", "Sand Valley Golf Resort: Sand Valley", "Manele Golf Course", "Kapalua: Plantation", "Landmand", "Sand Valley Golf Resort: Mammoth Dunes", "Streamsong Resort: Blue", "Bandon Dunes Golf Resort: Sheep Ranch", "Harbour Town Golf Links", "The Highland Course At Primland", "Pinehurst #10", "Gamble Sands", "Pinehurst #4", "Streamsong Resort: Black", "PGA Frisco: Fields Ranch East", "Black Desert Resort", "The Prairie Club (Dunes Course)", "Forest Dunes Golf Club", "Yale Golf Course", "The Greenbrier: Old White", "Torrey Pines Golf Course: South", "Pronghorn Club at Juniper Preserve", "The Omni Homestead Resort: Cascades Course", "Mauna Kea Beach Hotel Golf Course", "Tobacco Road Golf Club", "Sea Island: Seaside", "Big Cedar Lodge: Ozarks National", "The Broadmoor Golf Club: East", "Fallen Oak", "SentryWorld Golf Club", "Cabot Citrus Farms: Karoo", "Sedge Valley at Sand Valley", "CordeValle Golf Club", "Arcadia Bluffs South Course", "The Links At Spanish Bay", "Greywalls at Marquette Golf Club", "Paako Ridge Golf Club", "Wilderness Club", "The Quarry at Giants Ridge", "Wolf Creek Golf Club", "Pine Needles Lodge & Golf Club", "Tetherow Golf Club", "PGA West: Stadium Course", "The Loop: Black", "Nemacolin: Mystic Rock", "Whistling Straits: Irish Course", "The Golf Courses of Lawsonia: Links", "Wynn Golf Club", "The Loop (Red)", "Crosswater Golf Course", "Tullymore Golf Resort", "Red Sky Ranch & Golf Club Fazio Course", "The Wilderness At Fortune Bay", "Makai Golf Club", "Cascata", "Golden Horseshoe Golf Club: Gold Course", "Cog Hill Golf & Country Club: Dubsdread (Course #4)", "Fields Ranch PGA of America Frisco: West Course", "Taconic Golf Club", "The Dunes Golf & Beach Club", "Madden's on Gull Lake: The Classic at Madden's", "Big Cedar Lodge: Payne's Valley", "Mossy Oak Golf Club", "Edgewood Tahoe Golf Course", "Wild Horse Golf Club", "Black Mesa Golf Club", "Trump National Doral: Blue Monster", "Red Sky Ranch & Golf Club Norman Course", "Mid Pines Inn & Golf Club", "The Park at West Palm Beach", "The Prairie Club: Pines Course", "Firestone Country Club: South", "Blackwolf Run: Meadow Valleys", "Quintero Golf Club", "Big Cedar Lodge: Buffalo Ridge", "TPC San Antonio (Oaks)", "Wine Valley Golf Club", "The Pfau Course At Indiana University", "Southern Pines Golf Club", "Reynolds Lake Oconee: Great Waters", "Bay Harbor Golf Club: Links/Quarry"];
+
+const publicAliases=new Map([
+  ["arcadia bluffs golf club","Arcadia Bluffs Golf Club (Bluffs)"],
+  ["arcadia bluffs golf club bluffs","Arcadia Bluffs Golf Club (Bluffs)"],
+  ["arcadia bluffs bluffs","Arcadia Bluffs Golf Club (Bluffs)"],
+  ["pinehurst no 2","Pinehurst #2"],
+  ["pinehurst number 2","Pinehurst #2"],
+  ["pinehurst no 4","Pinehurst #4"],
+  ["pinehurst number 4","Pinehurst #4"],
+  ["pinehurst no 10","Pinehurst #10"],
+  ["pinehurst number 10","Pinehurst #10"],
+  ["forest dunes","Forest Dunes Golf Club"],
+  ["forest dunes golf","Forest Dunes Golf Club"],
+  ["forest dunes golf club","Forest Dunes Golf Club"],
+  ["arcadia bluffs south","Arcadia Bluffs South Course"],
+  ["arcadia bluffs south course","Arcadia Bluffs South Course"],
+  ["whistling straits straits","Whistling Straits: Straits Course"],
+  ["whistling straits irish","Whistling Straits: Irish Course"],
+  ["blackwolf run river","Blackwolf Run: River"],
+  ["blackwolf run meadow valleys","Blackwolf Run: Meadow Valleys"],
+  ["the loop black","The Loop: Black"],
+  ["the loop red","The Loop (Red)"],
+  ["bay harbor golf club links quarry","Bay Harbor Golf Club: Links/Quarry"]
+]);
+const publicNorm=x=>String(x||"").toLowerCase().replace(/&/g," and ").replace(/['’]/g,"").replace(/[^a-z0-9]+/g," ").replace(/\b(golf club|golf course|country club|golf links|golf resort|the)\b/g," ").replace(/\s+/g," ").trim();
+const publicRankByName=new Map(public100Names.map((name,i)=>[name, i+1]));
+const publicNormToName=new Map(public100Names.map(name=>[publicNorm(name),name]));
+for(const c of courses){
+  const direct=publicRankByName.get(c.name);
+  const aliasName=publicAliases.get(publicNorm(c.name));
+  const normalizedName=publicNormToName.get(publicNorm(c.name));
+  const pr=direct|| (aliasName?publicRankByName.get(aliasName):null) || (normalizedName?publicRankByName.get(normalizedName):null);
+  if(pr)c.public=pr;
+}
+/* Explicit cross-list canonicalization: one physical course record can carry
+   multiple rankings. This prevents an API round from becoming a duplicate
+   just because Golf Digest uses a slightly different public-list title. */
+const publicCanonicalByName=new Map([
+  ["Arcadia Bluffs Golf Club (Bluffs)","michigan11"],
+  ["Arcadia Bluffs South Course","michigan9"],
+  ["Forest Dunes Golf Club","michigan10"],
+  ["Pinehurst #2","usa32"],
+  ["Whistling Straits: Straits Course","usa26"],
+  ["Bethpage State Park: Black","usa38"],
+  ["TPC Sawgrass: Stadium","usa41"],
+  ["Kiawah Island Golf Resort: The Ocean Course","usa30"],
+  ["Bandon Dunes","usa44"],
+  ["Bandon Trails","usa61"],
+  ["Pebble Beach Golf Links","usa9"],
+  ["Pacific Dunes","usa23"],
+  ["Shadow Creek","usa24"],
+  ["Erin Hills Golf Course","usa49"]
+]);
+for(const [publicName,canonicalId] of publicCanonicalByName){
+  const rank=publicRankByName.get(publicName), c=courses.find(x=>x.id===canonicalId);
+  if(rank&&c)c.public=rank;
+}
+const publicExisting=new Set(courses.filter(c=>c.public).map(c=>c.public));
+for(const name of public100Names){
+  const rank=publicRankByName.get(name);
+  if(publicExisting.has(rank))continue;
+  const id=`public${rank}`;
+  courses.push({id,name,location:"United States",region:"usa",world:null,usa:null,public:rank,michigan:null});
+}
+
+const state=country==="USA" ? (parts[parts.length-1]||"") : "";
     const city=parts[0]||"";
     return {
       id:`canonical-${nameNorm}`,name:String(db.name),location:canonical,city,state,
