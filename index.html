@@ -2075,13 +2075,23 @@ async function loadFriendList(friendId){
       if(ce)throw ce;
       (cr||[]).forEach(c=>catalog.set(String(c.id),c));
     }
+    // Use the authenticated user's cloud membership as the authoritative
+    // source for the Friends button state. Local state can briefly lag during
+    // hydration, so relying on state.myList alone can incorrectly show
+    // "Add to my list" for a course the user already owns.
+    let myCourseIds=new Set((state.myList||[]).map(String));
+    const {data:myRows,error:myError}=await supabaseClient.from("user_courses")
+      .select("course_id").eq("user_id",currentUser.id);
+    if(myError)throw myError;
+    (myRows||[]).forEach(r=>{if(r?.course_id)myCourseIds.add(String(r.course_id))});
+
     list.innerHTML="";
     if(!rows?.length){list.innerHTML='<div class="friends-empty">This friend has not ranked any courses yet.</div>';return}
     rows.forEach((r,i)=>{
       const c=catalog.get(String(r.course_id));
       if(!c)return;
       const location=[c.city,c.state,c.country].filter(Boolean).join(", ");
-      const onMyList=state.myList.includes(String(c.id)) || state.myList.includes(c.id);
+      const onMyList=myCourseIds.has(String(c.id));
       const el=document.createElement("div");el.className="rankrow friend-row";
       el.dataset.courseId=String(c.id);
       el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${Number.isFinite(Number(r.personal_rank))?r.personal_rank:i+1}</div><div><div class="course">${c.name}</div><div class="loc">${location}</div></div><div><button class="friend-list-action" type="button" ${onMyList?"disabled":""}>${onMyList?"On my list":"Add to my list"}</button></div>`;
