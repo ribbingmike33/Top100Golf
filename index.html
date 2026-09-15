@@ -627,8 +627,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T17:00:00-04:00";
-const APP_VERSION="v114";
+const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
+const APP_VERSION="v115";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -756,6 +756,20 @@ function staticCourseForCloudRecord(db){
     if(canonicalMatches.length===1)return canonicalMatches[0];
     const canonicalExact=canonicalMatches.find(c=>norm(c.location||"")===norm(canonical));
     if(canonicalExact)return canonicalExact;
+
+    // Some older personal courses (Balcomie, Kilspindie, Dunbar, etc.) are
+    // intentionally not part of the bundled ranking catalog. They still have
+    // a canonical location here, so NEVER fall back to a cloud row that says
+    // USA. Build a canonical display record from the trusted identity data.
+    const parts=canonical.split(",").map(x=>x.trim()).filter(Boolean);
+    const country=courseCountryFromLocation(canonical,"");
+    const state=country==="USA" ? (parts[parts.length-1]||"") : "";
+    const city=parts[0]||"";
+    return {
+      id:`canonical-${nameNorm}`,name:String(db.name),location:canonical,city,state,
+      country:country||parts[parts.length-1]||"",region:country==="USA"?"usa":"world",
+      world:null,usa:null,michigan:null,public:null,logo:db.logo_url||"",website:db.website_url||""
+    };
   }
   // Explicit aliases are part of the bundled catalog, not fuzzy matching.
   const aliasId=rankingAliasNames.get(nameNorm);
@@ -2297,29 +2311,41 @@ async function loadFriendList(friendId){
  list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
  label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
  try{
-  const {data:rows,error}=await supabaseClient.from("user_courses")
-   .select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true});
-  if(error)throw error;
+  // Load the friend's memberships and the current user's memberships in parallel.
+  // Then fetch both course catalogs in parallel as well; the old version waited
+  // on each network request one after another, which made Friends feel slow.
+  const [friendMembership,myMembership]=await Promise.all([
+    supabaseClient.from("user_courses")
+      .select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true}),
+    supabaseClient.from("user_courses")
+      .select("course_id").eq("user_id",currentUser.id)
+  ]);
+  if(friendMembership.error)throw friendMembership.error;
+  if(myMembership.error)throw myMembership.error;
+  const rows=friendMembership.data||[];
+  const friendIds=[...new Set(rows.map(r=>r.course_id).filter(Boolean))];
+  const myIds=[...new Set((myMembership.data||[]).map(r=>r.course_id).filter(Boolean))];
 
-  const friendIds=[...(rows||[])].map(r=>r.course_id).filter(Boolean);
   const friendCatalog=new Map();
-  for(let i=0;i<friendIds.length;i+=50){
-   const {data:cr,error:ce}=await supabaseClient.from("courses")
-    .select("id,name,city,state,country,logo_url,website_url").in("id",friendIds.slice(i,i+50));
-   if(ce)throw ce;
-   (cr||[]).forEach(c=>friendCatalog.set(String(c.id),c));
-  }
-
-  const {data:myRows,error:myError}=await supabaseClient.from("user_courses")
-   .select("course_id").eq("user_id",currentUser.id);
-  if(myError)throw myError;
-  const myIds=[...(myRows||[])].map(r=>r.course_id).filter(Boolean);
   const myCatalog=new Map();
+  const friendBatches=[];
+  const myBatches=[];
+  for(let i=0;i<friendIds.length;i+=50){
+   friendBatches.push(supabaseClient.from("courses")
+    .select("id,name,city,state,country,logo_url,website_url").in("id",friendIds.slice(i,i+50)));
+  }
   for(let i=0;i<myIds.length;i+=50){
-   const {data:mc,error:me}=await supabaseClient.from("courses")
-    .select("id,name,city,state,country,logo_url,website_url").in("id",myIds.slice(i,i+50));
-   if(me)throw me;
-   (mc||[]).forEach(c=>myCatalog.set(String(c.id),c));
+   myBatches.push(supabaseClient.from("courses")
+    .select("id,name,city,state,country,logo_url,website_url").in("id",myIds.slice(i,i+50)));
+  }
+  const [friendResults,myResults]=await Promise.all([Promise.all(friendBatches),Promise.all(myBatches)]);
+  for(const result of friendResults){
+   if(result.error)throw result.error;
+   (result.data||[]).forEach(c=>friendCatalog.set(String(c.id),c));
+  }
+  for(const result of myResults){
+   if(result.error)throw result.error;
+   (result.data||[]).forEach(c=>myCatalog.set(String(c.id),c));
   }
 
   const canonicalMyIds=new Set((state.myList||[]).map(String));
