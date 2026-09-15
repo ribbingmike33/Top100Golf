@@ -729,8 +729,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T12:00:00-04:00";
-const APP_VERSION="v76";
+const APP_BUILD_UPDATED_AT="2026-09-14T19:25:00-04:00";
+const APP_VERSION="v77";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1157,17 +1157,25 @@ document.getElementById('editTimesPlayed').onclick=()=>{if(!rankEditingId)return
 document.getElementById('viewDeleteRounds').onclick=()=>{if(!rankEditingId)return;const id=rankEditingId;closeRankModal();openRoundHistory(id)};
 
 let myListFilter="all";
-function myListRegion(c){
-  if(!c)return "world";
+function myListRegions(c){
+  if(!c)return new Set(["world"]);
   const loc=String(c.location||"");
-  const country=courseCountryFromLocation(loc,c.country);
+  // Location is the primary geographic source. This prevents an API/cloud
+  // country field such as "USA" from incorrectly overriding a clearly
+  // international location like "Dunbar, East Lothian, Scotland".
+  const locationCountry=courseCountryFromLocation(loc,"");
+  const country=locationCountry||courseCountryFromLocation(loc,c.country);
   const michigan=/\bMichigan\b|,\s*MI(?:,|$)/i.test(loc)||String(c.state||"").toUpperCase()==="MI";
-  if(country==="USA")return michigan?"michigan":"us";
-  return "world";
+  if(country==="USA"){
+    const regions=new Set(["us"]);
+    if(michigan)regions.add("michigan");
+    return regions;
+  }
+  return new Set(["world"]);
 }
 function isMyListFiltered(){return myListFilter!=="all";}
 function renderMine(){
- let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map((id,idx)=>({c:get(id),idx})).filter(x=>x.c).filter(x=>myListFilter==="all"||myListRegion(x.c)===myListFilter).filter(x=>x.c.name.toLowerCase().includes(q)||x.c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
+ let q=document.getElementById("mysearch").value.toLowerCase(),arr=state.myList.map((id,idx)=>({c:get(id),idx})).filter(x=>x.c).filter(x=>myListFilter==="all"||myListRegions(x.c).has(myListFilter)).filter(x=>x.c.name.toLowerCase().includes(q)||x.c.location.toLowerCase().includes(q)),box=document.getElementById("mylist");box.innerHTML="";
  if(!arr.length){box.innerHTML='<div class="empty"><h3>Your list is empty.</h3>Log your first round to start ranking courses.</div>';return}
  arr.forEach(({c,idx})=>{let el=document.createElement("div");el.className="rankrow played-row";el.dataset.id=c.id;el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${idx+1}</div><div class="logo">${c.logo?`<img src="${c.logo}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div class="count"><button class="roundslink" type="button" aria-label="View rounds" data-round-history="${c.id}"><strong id="count-${c.id}">${count(c.id)}×</strong><span> played</span></button></div>`;
  if(!isMyListFiltered()){
