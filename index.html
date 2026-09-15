@@ -553,7 +553,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v124";
+const APP_VERSION="v125";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -2077,6 +2077,7 @@ document.getElementById("save").onclick=async()=>{
 
 
 let friendsCache=[];
+let friendsDirectoryPromise=null;
 let selectedFriendId="";
 let friendsFilter="all";
 let currentFriendRows=[];
@@ -2145,26 +2146,50 @@ function renderFriendRows(){
 }
 
 async function loadFriendsDirectory(){
-  friendsFilter="all";
-  syncFriendsFilterUI();
   const sel=document.getElementById("friendSelect"),list=document.getElementById("friendsList");
   if(!sel||!list)return;
-  if(!currentUser||!supabaseClient){sel.innerHTML='<option value="">Sign in to see friends…</option>';list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';return}
-  sel.disabled=true;list.innerHTML='<div class="friends-loading">Loading friends…</div>';
-  try{
-    const {data,error}=await supabaseClient.from("profiles").select("id,username,display_name,email").order("username",{ascending:true});
-    if(error)throw error;
-    friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
+  if(!currentUser||!supabaseClient){
+    sel.innerHTML='<option value="">Sign in to see friends…</option>';
+    list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';
+    return;
+  }
+  // If we already have the directory, switching back to Friends is instant.
+  if(friendsCache.length){
+    sel.disabled=false;
     sel.innerHTML='<option value="">Select a friend…</option>';
     friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.username||f.display_name||f.email||"Member";sel.appendChild(o)});
-    if(!friendsCache.length){list.innerHTML='<div class="friends-empty">No other registered members yet.</div>';return}
-    list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
-  }catch(e){
-    console.warn("Friends directory load failed",e);
-    sel.innerHTML='<option value="">Friends unavailable</option>';
-    const msg=String(e?.message||e||"Unable to load friends");
-    list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
-  }finally{sel.disabled=false}
+    if(selectedFriendId)sel.value=selectedFriendId;
+    list.innerHTML=selectedFriendId
+      ? '<div class="friends-loading">Loading their My List…</div>'
+      : '<div class="friends-empty">Select a friend above to view their My List.</div>';
+    return;
+  }
+  // Never allow multiple directory requests to stack up.
+  if(friendsDirectoryPromise)return friendsDirectoryPromise;
+  sel.disabled=true;
+  list.innerHTML='<div class="friends-loading">Loading friends…</div>';
+  friendsDirectoryPromise=(async()=>{
+    try{
+      const {data,error}=await supabaseClient.from("profiles").select("id,username,display_name,email").order("username",{ascending:true});
+      if(error)throw error;
+      friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
+      sel.innerHTML='<option value="">Select a friend…</option>';
+      friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.username||f.display_name||f.email||"Member";sel.appendChild(o)});
+      if(selectedFriendId)sel.value=selectedFriendId;
+      list.innerHTML=friendsCache.length
+        ? '<div class="friends-empty">Select a friend above to view their My List.</div>'
+        : '<div class="friends-empty">No other registered members yet.</div>';
+    }catch(e){
+      console.warn("Friends directory load failed",e);
+      sel.innerHTML='<option value="">Friends unavailable</option>';
+      const msg=String(e?.message||e||"Unable to load friends");
+      list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
+    }finally{
+      sel.disabled=false;
+      friendsDirectoryPromise=null;
+    }
+  })();
+  return friendsDirectoryPromise;
 }
 async function loadFriendList(friendId){
  const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
@@ -2339,7 +2364,6 @@ if(supabaseClient){
       );
       await migrateAndLoadCloud();
       renderTop();renderMine();
-      if(document.getElementById("friends")?.classList.contains("active"))loadFriendsDirectory();
     }catch(e){
       console.warn("Cloud account load failed",e);
       // A previous account's async request can finish after the user has
