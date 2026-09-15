@@ -553,7 +553,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v125";
+const APP_VERSION="v127";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1653,6 +1653,7 @@ document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
   filter=b.dataset.f;
   rankingMetadataRun++;
   syncTopFilterUI();
+  if(filter!=="michigan" && supabaseClient && !cloudRankingsLoaded)loadCloudRankings().then(()=>{if(document.getElementById("top")?.classList.contains("active")){renderTop();renderMine();}});
   const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();renderTop();
 });
 document.getElementById("topMineToggle").onclick=()=>{
@@ -2358,6 +2359,11 @@ if(supabaseClient){
     if(cloudHydratedUserId===currentUser.id)return;
     cloudHydratedUserId=currentUser.id;
     try{
+      // Friends is the lightweight, independent directory. Load it first so
+      // opening Friends never waits behind rankings or My List hydration.
+      // Friends must never block account hydration. Fire the lightweight directory
+      // request independently; the Friends tab also calls this directly.
+      loadFriendsDirectory().catch(e=>console.warn("Friends background load failed",e));
       await supabaseClient.from("profiles").upsert(
         {id:currentUser.id,email:currentUser.email||"",username:currentUser.user_metadata?.username||((currentUser.email||"").split("@")[0]),display_name:currentUser.user_metadata?.username||((currentUser.email||"").split("@")[0])},
         {onConflict:"id"}
@@ -2422,11 +2428,8 @@ async function migrateAndLoadCloud(){
 updateRefreshedDate();
 renderTop();
 renderMine();
-(async function(){
-  await loadCloudRankings();
-  renderTop();
-  renderMine();
-})();
+// Published rankings are lazy-loaded only when a Top 100 tab needs them.
+// Do not compete with the Friends directory or account hydration during boot.
 
 </script>
 </body>
