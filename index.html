@@ -636,7 +636,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v122";
+const APP_VERSION="v123";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -2215,31 +2215,126 @@ function renderFriendRows(){
 }
 
 async function loadFriendsDirectory(){
-  friendsFilter="all";
-  syncFriendsFilterUI();
   const sel=document.getElementById("friendSelect"),list=document.getElementById("friendsList");
   if(!sel||!list)return;
-  if(!currentUser||!supabaseClient){sel.innerHTML='<option value="">Sign in to see friends…</option>';list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';return}
-  sel.disabled=true;list.innerHTML='<div class="friends-loading">Loading friends…</div>';
+  if(!currentUser||!supabaseClient){
+    sel.innerHTML='<option value="">Sign in to see friends…</option>';
+    list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';
+    return;
+  }
+
+  // Fast path: the directory itself is only one small profiles query.
+  // Do not wait for account hydration, rounds, rankings, or course catalogs.
+  if(friendsCache.length){
+    sel.innerHTML='<option value="">Select a friend…</option>';
+    friendsCache.forEach(f=>{
+      const o=document.createElement("option");
+      o.value=f.id;
+      o.textContent=f.username||f.display_name||f.email||"Member";
+      sel.appendChild(o);
+    });
+    if(selectedFriendId)sel.value=selectedFriendId;
+    list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
+    return;
+  }
+
+  sel.disabled=true;
+  list.innerHTML='<div class="friends-loading">Loading friends…</div>';
   try{
-    const result=await Promise.race([
-      supabaseClient.from("profiles").select("id,username,display_name,email").order("username",{ascending:true}),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error("Friends directory request timed out after 10 seconds")),10000))
-    ]);
-    const {data,error}=result;
+    const {data,error}=await supabaseClient
+      .from("profiles")
+      .select("id,username,display_name,email")
+      .order("username",{ascending:true});
     if(error)throw error;
+
     friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
     sel.innerHTML='<option value="">Select a friend…</option>';
-    friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.username||f.display_name||f.email||"Member";sel.appendChild(o)});
-    if(!friendsCache.length){list.innerHTML='<div class="friends-empty">No other registered members yet.</div>';return}
+    friendsCache.forEach(f=>{
+      const o=document.createElement("option");
+      o.value=f.id;
+      o.textContent=f.username||f.display_name||f.email||"Member";
+      sel.appendChild(o);
+    });
+    if(!friendsCache.length){
+      list.innerHTML='<div class="friends-empty">No other registered members yet.</div>';
+      return;
+    }
     list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
   }catch(e){
     console.warn("Friends directory load failed",e);
     sel.innerHTML='<option value="">Friends unavailable</option>';
-    const msg=String(e?.message||e||"Unable to load friends");
-    list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
-  }finally{sel.disabled=false}
+    list.innerHTML='<div class="friends-empty">Could not load the Friends directory.<br><small>Please try again.</small></div>';
+  }finally{
+    sel.disabled=false;
+  }
 }
+
+async function loadFriendList(friendId){
+  const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
+  if(!friendId){
+    selectedFriendId="";
+    currentFriendRows=[];
+    currentFriendMyCourseIds=new Set();
+    currentFriendMyCourseRecords=[];
+    list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
+    label.textContent="Personal ranking";
+    return;
+  }
+  const friend=friendsCache.find(x=>String(x.id)===String(friendId));
+  if(!friend)return;
+  selectedFriendId=friendId;
+  list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
+  label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
+
+  try{
+    // Fetch the friend's memberships and the current user's memberships in parallel.
+    const [friendResult,myResult]=await Promise.all([
+      supabaseClient.from("user_courses")
+        .select("course_id,personal_rank,times_played")
+        .eq("user_id",friend.id)
+        .order("personal_rank",{ascending:true}),
+      supabaseClient.from("user_courses")
+        .select("course_id")
+        .eq("user_id",currentUser.id)
+    ]);
+    if(friendResult.error)throw friendResult.error;
+    if(myResult.error)throw myResult.error;
+
+    const rows=friendResult.data||[];
+    const ids=[...new Set(rows.map(r=>r.course_id).filter(Boolean))];
+    const myIds=new Set((myResult.data||[]).map(r=>String(r.course_id)).filter(Boolean));
+
+    // One course query for the friend's IDs. Supabase .in() handles the list
+    // in one round trip; no per-course requests.
+    let catalog=new Map();
+    if(ids.length){
+      const {data:cr,error:ce}=await supabaseClient
+        .from("courses")
+        .select("id,name,city,state,country,logo_url,website_url")
+        .in("id",ids);
+      if(ce)throw ce;
+      (cr||[]).forEach(c=>catalog.set(String(c.id),c));
+    }
+
+    currentFriendRows=rows.map(r=>{
+      const c=catalog.get(String(r.course_id));
+      return c?{...r,course:c}:null;
+    }).filter(Boolean);
+    currentFriendMyCourseIds=myIds;
+    currentFriendMyCourseRecords=currentFriendRows.map(r=>({
+      ...r.course,
+      location:[r.course.city,r.course.state,r.course.country].filter(Boolean).join(", ")
+    }));
+    renderFriendRows();
+  }catch(e){
+    console.warn("Friend My List load failed",e);
+    currentFriendRows=[];
+    currentFriendMyCourseIds=new Set();
+    currentFriendMyCourseRecords=[];
+    list.innerHTML='<div class="friends-empty">Could not load this friend’s My List.<br><small>Please try again.</small></div>';
+  }
+}
+
 async function addFriendCourseToMyList(dbid,button){
   if(!currentUser||!supabaseClient){toast("Sign in to add courses");return}
   if(activeStateOwner!==String(currentUser.id)){toast("Account is still connecting — try again");return}
