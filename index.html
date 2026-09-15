@@ -603,8 +603,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T12:00:00-04:00";
-const APP_VERSION="v88";
+const APP_BUILD_UPDATED_AT="2026-09-15T08:09:11-04:00";
+const APP_VERSION="v93";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1625,36 +1625,123 @@ async function searchOpenGolf(q){
   }
   return results;
 }
+/* Search identity helpers. Search results may come from the bundled Course Book
+   catalog and OpenGolfAPI, so the same real-world course can arrive with different
+   IDs and different amounts of location data. Deduplicate by identity, then keep
+   the most informative version for display. This never changes a user's rank or
+   rounds, and a richer API result never replaces the app's canonical course ID. */
+const searchDisplayOverrides=new Map();
+function searchLocationTokens(c){
+  return courseNameNorm(c?.location||"").split(" ").filter(x=>x.length>1);
+}
+function searchInfoScore(c){
+  if(!c)return 0;
+  let score=0;
+  const name=String(c.name||"").trim(),loc=String(c.location||"").trim();
+  if(name)score+=10;
+  if(loc)score+=20;
+  const parts=loc.split(",").map(x=>x.trim()).filter(Boolean);
+  score+=Math.min(parts.length,4)*12;
+  if(c.city)score+=8;
+  if(c.state)score+=10;
+  if(c.country)score+=10;
+  if(c.website)score+=3;
+  if(c.logo)score+=2;
+  if(c.michigan||c.usa||c.world||c.public)score+=2;
+  return score;
+}
+function searchCoursesEquivalent(a,b){
+  if(!a||!b)return false;
+  const an=courseNameNorm(a.name||""),bn=courseNameNorm(b.name||"");
+  if(!an||!bn||an!==bn)return false;
+  const at=searchLocationTokens(a),bt=searchLocationTokens(b);
+  if(!at.length||!bt.length)return true;
+  const as=new Set(at),bs=new Set(bt);
+  // A sparse location such as "USA" is compatible with a richer location such
+  // as "Ranch Creek, TX, USA". Two populated locations must not conflict.
+  const aSubset=at.every(x=>bs.has(x)),bSubset=bt.every(x=>as.has(x));
+  return aSubset||bSubset;
+}
+function preferredSearchCourse(a,b){
+  if(!a)return b;
+  if(!b)return a;
+  const sa=searchInfoScore(a),sb=searchInfoScore(b);
+  if(sb>sa)return b;
+  if(sa>sb)return a;
+  // When equally complete, prefer the Course Book's existing record.
+  if(a._courseBookSource&&!b._courseBookSource)return a;
+  if(b._courseBookSource&&!a._courseBookSource)return b;
+  return a;
+}
+function dedupeSearchCourses(items){
+  const groups=[];
+  for(const item of (items||[])){
+    if(!item)continue;
+    const found=groups.find(g=>searchCoursesEquivalent(g.best,item));
+    if(found){
+      const oldBest=found.best;
+      found.best=preferredSearchCourse(oldBest,item);
+      found.items.push(item);
+    }else{
+      groups.push({best:item,items:[item]});
+    }
+  }
+  return groups;
+}
+function searchResultCourse(c,source){
+  if(!c)return null;
+  const copy={...c};
+  if(source)copy._courseBookSource=true;
+  return copy;
+}
+function renderSearchButton(box,c){
+  const id=String(c.id),display=searchDisplayOverrides.get(id)||c;
+  let b=document.createElement("button");b.className="result";
+  b.innerHTML=`<strong>${display.name}</strong><small>${display.location||""}${display.michigan?` · Michigan #${display.michigan}`:""}${display.usa?` · USA #${display.usa}`:""}${display.world?` · World #${display.world}`:""}${display.public?` · Public #${display.public}`:""}</small>`;
+  b.onclick=()=>selectCourse(id);
+  box.appendChild(b);
+}
 function renderResults(){
   const q=document.getElementById("modalsearch").value.toLowerCase().trim(),box=document.getElementById("results");
   box.innerHTML="";
-  const local=courses.filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)).slice(0,10);
-  local.forEach(c=>{let b=document.createElement("button");b.className="result";b.innerHTML=`<strong>${c.name}</strong><small>${c.location}${c.michigan?` · Michigan #${c.michigan}`:""}${c.usa?` · USA #${c.usa}`:""}${c.world?` · World #${c.world}`:""}${c.public?` · Public #${c.public}`:""}</small>`;b.onclick=()=>selectCourse(c.id);box.appendChild(b)});
+  searchDisplayOverrides.clear();
+  const local=courses.filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q)).slice(0,10).map(c=>searchResultCourse(c,true));
+  const renderLocal=dedupeSearchCourses(local).slice(0,10).map(g=>g.best);
+  renderLocal.forEach(c=>renderSearchButton(box,c));
   if(q.length>=2){
     clearTimeout(remoteSearchTimer);
     remoteSearchTimer=setTimeout(async()=>{
       let remote=[];
       try{remote=await searchOpenGolf(q)}catch(e){console.warn("OpenGolfAPI search failed",e);return}
-      const shown=new Set(local.map(c=>String(c.id)));
-      const added=new Set();
-      remote.filter(c=>c && !shown.has(String(c.id))).slice(0,10).forEach(c=>{
-        const merged=mergeCourse(c);
-        const id=String(merged.id);
-        if(added.has(id))return;
-        added.add(id);
-        let b=document.createElement("button");b.className="result";
-        b.innerHTML=`<strong>${merged.name}</strong><small>${merged.location||""}</small>`;
-        b.onclick=()=>selectCourse(id);box.appendChild(b);
-      });
-      // Give the user a clear result instead of a silently empty modal when
-      // neither the bundled catalog nor the live API has a match.
+      if(q!==document.getElementById("modalsearch").value.toLowerCase().trim())return;
+
+      const all=[...local,...remote.map(c=>searchResultCourse(c,false))];
+      const groups=dedupeSearchCourses(all);
+      const unique=[];
+      for(const group of groups){
+        const best=group.best;
+        const localMatch=group.items.find(x=>x._courseBookSource);
+        const canonical=localMatch||best;
+        if(localMatch && best!==localMatch && searchInfoScore(best)>searchInfoScore(localMatch)){
+          searchDisplayOverrides.set(String(localMatch.id),{...localMatch,name:best.name||localMatch.name,location:best.location||localMatch.location,city:best.city||localMatch.city,state:best.state||localMatch.state,country:best.country||localMatch.country});
+        }
+        if(!localMatch){
+          const merged=mergeCourse(best);
+          unique.push(merged);
+        }else{
+          unique.push(canonical);
+        }
+      }
+
+      box.innerHTML="";
+      unique.slice(0,10).forEach(c=>renderSearchButton(box,c));
       if(!box.children.length && q===document.getElementById("modalsearch").value.toLowerCase().trim()){
         const empty=document.createElement("div");empty.className="sub";empty.style.margin="8px 2px 0";empty.textContent="No course found. Try the full course name or add it manually.";box.appendChild(empty);
       }
     },180);
   }
 }
-function selectCourse(id){selectedCourseId=id;const c=get(id),existing=count(id);document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="How many rounds are you adding?";document.getElementById("modalsearch").value=c.name;document.getElementById("results").innerHTML="";document.getElementById("results").style.display="none";document.getElementById("selectedCourseCard").innerHTML=`<strong>${c.name}</strong><small>${c.location}${existing?` · Already played ${existing}×`:""}</small>`;document.getElementById("quantityBox").style.display="block";document.getElementById("searchActions").style.display="none";document.querySelector(".logmodal .searchgroup").style.display="none";document.getElementById("timesPlayed").value=1;setTimeout(()=>{document.getElementById("timesPlayed").focus();document.getElementById("timesPlayed").select()},50)}
+function selectCourse(id){selectedCourseId=id;const c=get(id),display=searchDisplayOverrides.get(String(id))||c,existing=count(id);document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="How many rounds are you adding?";document.getElementById("modalsearch").value=display.name;document.getElementById("results").innerHTML="";document.getElementById("results").style.display="none";document.getElementById("selectedCourseCard").innerHTML=`<strong>${display.name}</strong><small>${display.location}${existing?` · Already played ${existing}×`:""}</small>`;document.getElementById("quantityBox").style.display="block";document.getElementById("searchActions").style.display="none";document.querySelector(".logmodal .searchgroup").style.display="none";document.getElementById("timesPlayed").value=1;setTimeout(()=>{document.getElementById("timesPlayed").focus();document.getElementById("timesPlayed").select()},50)}
 document.getElementById("confirmLog").onclick=()=>{if(!selectedCourseId)return;const qty=Math.max(1,parseInt(document.getElementById("timesPlayed").value,10)||1);logRounds(selectedCourseId,qty)};
 document.getElementById("timesPlayed").addEventListener("focus",()=>{syncVisibleViewport();setTimeout(()=>document.getElementById("confirmLog").scrollIntoView({behavior:"smooth",block:"nearest"}),250)});
 async function logRounds(id,qty){
