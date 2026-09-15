@@ -626,8 +626,44 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T08:37:54-04:00";
-const APP_VERSION="v99";
+const APP_BUILD_UPDATED_AT="2026-09-15T08:48:21-04:00";
+const APP_VERSION="v100";
+
+// Ranking metadata cache is separate from user state. It enriches static ranking
+// entries with authoritative OpenGolfAPI city/state data without changing the
+// Course Book course ID, ranking, rounds, or personal order.
+const RANKING_LOCATION_CACHE_KEY="theCourseBook_ranking_locations_v1";
+let rankingLocationCache={};
+try{
+  const raw=localStorage.getItem(RANKING_LOCATION_CACHE_KEY);
+  const parsed=raw?JSON.parse(raw):{};
+  if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))rankingLocationCache=parsed;
+}catch(_){}
+function stateDisplayName(code){
+  const v=String(code||"").trim();
+  if(!v)return "";
+  const select=document.getElementById("newstate");
+  if(select){
+    const opt=[...select.options].find(o=>String(o.value).toUpperCase()===v.toUpperCase());
+    if(opt&&opt.textContent)return opt.textContent.trim();
+  }
+  const names={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",DC:"District of Columbia"};
+  return names[v.toUpperCase()]||v;
+}
+function applyRankingLocationCache(){
+  for(const c of courses){
+    const meta=rankingLocationCache[String(c.id)];
+    if(!meta)continue;
+    if(meta.location)c.location=meta.location;
+    if(meta.city)c.city=meta.city;
+    if(meta.state)c.state=meta.state;
+    if(meta.country)c.country=meta.country;
+  }
+}
+function saveRankingLocationCache(){
+  try{localStorage.setItem(RANKING_LOCATION_CACHE_KEY,JSON.stringify(rankingLocationCache));}catch(_){}
+}
+applyRankingLocationCache();
 document.getElementById("refreshApp").onclick=()=>{
   const button=document.getElementById("refreshApp"),overlay=document.getElementById("appRefreshOverlay");
   if(button.disabled)return;
@@ -1073,6 +1109,82 @@ async function addTopCourseToMyList(id,button){
  }
 }
 
+let rankingMetadataRun=0;
+let rankingMetadataRendering=false;
+function publicMetadataNeedsEnrichment(c){
+  if(!c||!c.public)return false;
+  const loc=String(c.location||"").trim();
+  const state=String(c.state||"").trim();
+  const city=String(c.city||"").trim();
+  return !city || !state || /^united states$/i.test(loc) || /^usa$/i.test(loc);
+}
+function rankingMetadataMatch(target,raw){
+  if(!target||!raw)return null;
+  const parsed=apiCourseToRaw(raw);
+  const targetNorm=publicNorm(target.name);
+  const candidateNorm=publicNorm(parsed.displayName);
+  if(!targetNorm||!candidateNorm)return null;
+  if(!parsed.isUS)return null;
+  if(!parsed.city||!parsed.state)return null;
+  if(targetNorm===candidateNorm)return parsed;
+  const a=new Set(targetNorm.split(" ").filter(x=>x.length>1));
+  const b=new Set(candidateNorm.split(" ").filter(x=>x.length>1));
+  const shared=[...a].filter(x=>b.has(x)).length;
+  const coverage=shared/Math.max(a.size,b.size);
+  if(coverage>=0.80)return parsed;
+  return null;
+}
+async function fetchPublicRankingMetadata(course){
+  const cached=rankingLocationCache[String(course.id)];
+  if(cached&&cached.city&&cached.state)return false;
+  const query=String(course.name||"").trim();
+  if(query.length<2)return false;
+  try{
+    const res=await fetchOpenGolf(`${API_BASE}/courses/search?q=${encodeURIComponent(query)}&limit=10&_cb=ranking-${encodeURIComponent(String(course.id))}`);
+    if(!res.ok)throw new Error(`OpenGolfAPI ${res.status}`);
+    const data=await res.json();
+    const candidates=rankOpenGolfResults(extractOpenGolfCourses(data),query);
+    for(const raw of candidates){
+      const parsed=rankingMetadataMatch(course,raw);
+      if(!parsed)continue;
+      const stateName=stateDisplayName(parsed.state);
+      const location=[parsed.city,stateName].filter(Boolean).join(", ");
+      if(!location)continue;
+      course.location=location;
+      course.city=parsed.city;
+      course.state=parsed.state;
+      course.country="USA";
+      rankingLocationCache[String(course.id)]={city:parsed.city,state:parsed.state,country:"USA",location,updatedAt:new Date().toISOString()};
+      return true;
+    }
+  }catch(e){
+    console.warn("OpenGolfAPI ranking metadata failed",course.name,e);
+  }
+  return false;
+}
+async function queuePublicRankingMetadata(items){
+  const run=++rankingMetadataRun;
+  const targets=(items||[]).filter(publicMetadataNeedsEnrichment);
+  if(!targets.length)return;
+  // Enrich in small concurrent batches so opening the Public Top 100 does not
+  // fire 100 requests at once. Results are cached by Course Book ranking ID.
+  for(let i=0;i<targets.length;i+=5){
+    if(run!==rankingMetadataRun)return;
+    const batch=targets.slice(i,i+5);
+    await Promise.allSettled(batch.map(fetchPublicRankingMetadata));
+    saveRankingLocationCache();
+    if(run!==rankingMetadataRun)return;
+    // Update only the location text already on screen. Do not rebuild the list
+    // while the user is scrolling; that would cause iPhone Safari to jump.
+    if(filter==="public"&&!showTopMine&&!document.getElementById("topsearch").value.trim()){
+      for(const c of batch){
+        if(!c?.id||!c.location)continue;
+        const row=document.querySelector(`.top-course-row[data-course-id="${CSS.escape(String(c.id))}"] .loc`);
+        if(row)row.textContent=c.location;
+      }
+    }
+  }
+}
 function renderTop(){
  syncTopFilterUI();
  let q=document.getElementById("topsearch").value.toLowerCase();
@@ -1087,11 +1199,13 @@ function renderTop(){
    let r=c[rankKey],p=count(c.id),onList=state.myList.includes(c.id);
    let el=document.createElement("div");
    el.className="row top-course-row"+(p?" played-row":"");
+   el.dataset.courseId=String(c.id);
    el.innerHTML=`<div class="rank">#${r}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div><button class="top-list-action" type="button" ${onList?"disabled":""}>${onList?"On my list":"Add to my list"}</button></div>`;
    const btn=el.querySelector(".top-list-action");
    if(!onList)btn.onclick=()=>addTopCourseToMyList(c.id,btn);
    box.appendChild(el);
  });
+ if(filter==="public" && !showTopMine && !q && !rankingMetadataRendering)queuePublicRankingMetadata(arr);
  const mineToggle=document.getElementById("topMineToggle");
  if(mineToggle){
    mineToggle.textContent=showTopMine?"Show all":"Show mine";
@@ -1449,6 +1563,7 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
 document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
   filter=b.dataset.f;
+  rankingMetadataRun++;
   syncTopFilterUI();
   const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();renderTop();
 });
