@@ -116,6 +116,32 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   #toplist .top-list-action{min-height:38px;width:100%;padding:7px 7px;font-size:11px}
 }
 
+
+/* State-aware Top 100 controls — shared by every state, including Michigan. */
+.top100-controls{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+.top100-controls #topseg{max-width:none;width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;overflow:visible}
+.top100-controls #topseg button{min-width:0;width:100%;padding:12px 10px;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.top100-controls .top-controls-right{display:grid;grid-template-columns:minmax(190px,240px) minmax(100px,130px) minmax(240px,1fr);align-items:stretch;gap:10px;width:100%}
+.top100-controls .top-state-select{width:100%;min-width:0;height:48px;padding:0 38px 0 15px;border-radius:11px;font-size:13px;font-weight:700}
+.top100-controls .top-mine-toggle{min-height:48px;border-radius:11px;padding:0 18px;font-size:12px}
+.top100-controls .top-controls-right .search{width:100%;min-width:0;height:48px;border-radius:11px}
+.mine-controls{display:flex;align-items:stretch;gap:10px}
+.mine-controls .mylist-filter{flex:1;max-width:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;overflow:visible}
+.mine-controls .mylist-filter button{min-width:0;width:100%;padding:12px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mine-controls .search{flex:0 1 360px;width:auto;min-width:220px;height:48px;border-radius:11px}
+@media(max-width:760px){
+  .top100-controls{gap:12px}
+  .top100-controls #topseg{gap:4px}
+  .top100-controls #topseg button{padding:11px 5px;font-size:11px;letter-spacing:-.01em}
+  .top100-controls .top-controls-right{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+  .top100-controls .top-state-select{grid-column:1/-1;width:100%;height:50px;font-size:14px}
+  .top100-controls .top-mine-toggle{width:100%;min-height:50px}
+  .top100-controls .top-controls-right .search{width:100%;height:50px}
+  .mine-controls{gap:12px}
+  .mine-controls .mylist-filter{width:100%;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-bottom:0}
+  .mine-controls .mylist-filter button{padding:12px 4px;min-height:50px;font-size:12px}
+  .mine-controls .search{width:100%;min-width:0;height:50px;flex:none}
+}
 </style>
 
 <style>
@@ -221,7 +247,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="copy"><div class="eyebrow">The great courses</div><h1>Your Top 100 journey.</h1><p>Track the world's, America's and the best courses in every state. See how many you've played and keep building your golf resume.</p></div>
 <div class="card"><div class="statlabel">Best in State</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
 </div>
-<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="state"><span id="stateTopTabLabel">Select State - All</span></button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="world">World</button></div><div class="top-controls-right"><select id="stateRankSelect" class="top-state-select" aria-label="Best in State"><option value="">Best in State</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select><button id="topMineToggle" class="top-mine-toggle" type="button" aria-pressed="false">Show mine</button><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div></div>
+<div class="controls top100-controls"><div class="seg" id="topseg"><button class="active" data-f="state"><span id="stateTopTabLabel">Select State - All</span></button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="world">World</button></div><div class="top-controls-right"><select id="stateRankSelect" class="top-state-select" aria-label="Best in State"><option value="">Select a state…</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select><button id="topMineToggle" class="top-mine-toggle" type="button" aria-pressed="false">Show mine</button><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div></div>
 <div class="label">Top courses</div><div class="list" id="toplist"></div>
 </section>
 
@@ -548,7 +574,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T20:00:00-04:00";
-const APP_VERSION="v139";
+const APP_VERSION="v140";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1053,6 +1079,8 @@ function syncTopFilterUI(){
   const stateName=selectedStateCode?stateDisplayName(selectedStateCode):"Select State";
   const stateTab=document.getElementById("stateTopTabLabel");
   if(stateTab)stateTab.textContent=stateName+" - All";
+  const stateSelect=document.getElementById("stateRankSelect");
+  if(stateSelect)stateSelect.value=selectedStateCode||"";
   document.querySelectorAll("#topseg button").forEach(x=>x.classList.toggle("active",x.dataset.f===filter));
   syncMyListStateFilterUI();
 }
@@ -1390,7 +1418,8 @@ function syncMyListStateFilterUI(){
   if(label)label.textContent=name;
   if(button){
     button.disabled=!selectedStateCode;
-    button.setAttribute("aria-label",selectedStateCode?`${name} courses`:"Select a state on Top 100 first");
+    button.setAttribute("aria-label",selectedStateCode?`${name} courses`:"Select a state on Top 100");
+    button.title=selectedStateCode?`Show ${name} courses` : "Select a state on Top 100";
   }
   if(myListFilter==="state"&&!selectedStateCode)myListFilter="all";
   document.querySelectorAll("#mylistFilter button").forEach(x=>x.classList.toggle("active",x.dataset.myfilter===myListFilter));
@@ -1692,27 +1721,26 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
   if(b.dataset.page==="friends")loadFriendsDirectory();
 });
 document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
   filter=b.dataset.f;
-  if(filter!=="state")selectedStateCode="";
   rankingMetadataRun++;
   syncTopFilterUI();
-  if(supabaseClient && !cloudRankingsLoaded)loadCloudRankings().then(()=>{if(document.getElementById("top")?.classList.contains("active")){renderTop();renderMine();}});
-  const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();renderTop();
+  const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();
+  renderTop();
+  if(supabaseClient && !cloudRankingsLoaded){
+    loadCloudRankings().then(()=>{if(document.getElementById("top")?.classList.contains("active"))renderTop();});
+  }
 });
 document.getElementById("stateRankSelect")?.addEventListener("change",e=>{
   const code=String(e.target.value||"").toUpperCase();
-  if(!code){selectedStateCode="";filter="state";syncTopFilterUI();renderTop();return;}
   selectedStateCode=code;
   filter="state";
-  syncTopFilterUI();
-  document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
   rankingMetadataRun++;
+  syncTopFilterUI();
   const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();
+  renderTop();
   if(supabaseClient && !cloudRankingsLoaded){
-    renderTop();
     loadCloudRankings().then(()=>{if(document.getElementById("top")?.classList.contains("active"))renderTop();});
-  }else renderTop();
+  }
 });
 document.getElementById("topMineToggle").onclick=()=>{
   showTopMine=!showTopMine;
