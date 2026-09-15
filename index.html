@@ -255,7 +255,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 </div>
 <div class="actions" id="searchActions"><button class="secondary" id="add">+ Add Course</button></div>
 </div></div>
-<div class="backdrop" id="addmodal"><div class="modal"><h3>Add a course</h3><div class="sub">Add anything that isn't in the pre-loaded lists.</div><div class="group"><label>Course Name</label><input id="newname" placeholder="Course name"></div><div class="group"><label>Location</label><input id="newloc" placeholder="City, State / Country"></div><div class="group"><label>Logo URL — optional</label><input id="newlogo" placeholder="https://..."></div><div class="group"><label>Personal Rank — optional</label><input id="newrank" type="number" inputmode="numeric" min="1" step="1" placeholder="Leave blank for bottom"></div><div class="actions"><button class="secondary" id="addclose">Cancel</button><button class="primary" id="save">Add & Log Round</button></div></div></div>
+<div class="backdrop" id="addmodal"><div class="modal"><h3>Add a course</h3><div class="sub">Add anything that isn't in the pre-loaded lists.</div><div class="group"><label>Course Name</label><input id="newname" placeholder="Course name"></div><div class="group"><label>Location</label><input id="newloc" placeholder="City, State / Region"></div><div class="group"><label>Country</label><input id="newcountry" placeholder="Country" autocomplete="country-name" required></div><div class="group"><label>Logo URL — optional</label><input id="newlogo" placeholder="https://..."></div><div class="group"><label>Personal Rank — optional</label><input id="newrank" type="number" inputmode="numeric" min="1" step="1" placeholder="Leave blank for bottom"></div><div class="actions"><button class="secondary" id="addclose">Cancel</button><button class="primary" id="save">Add & Log Round</button></div></div></div>
 <div class="backdrop" id="rankmodal"><div class="modal"><div class="modalhead"><div><div class="eyebrow">Course options</div><h3>Course Details</h3></div><button class="modalclose" id="rankClose" aria-label="Close">×</button></div><div class="rankmodal-course"><strong id="rankCourseName"></strong><span id="rankCourseLoc"></span></div><div class="course-option-section"><div class="course-option-label">Personal ranking</div><div id="rankChoose"><div class="actions" style="margin-top:0"><button class="secondary" id="moveTop">Move to Top</button><button class="primary" id="moveCustom">Move to…</button></div></div><div id="rankCustom" style="display:none"><div class="group"><label>Move to rank</label><input class="rankmoveinput" id="rankInput" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 5"><div class="rankmovehint">Enter any rank from 1 to the bottom. Other courses will shift automatically.</div></div><div class="actions"><button class="secondary" id="rankCancel">Cancel</button><button class="primary" id="rankSave">Move Course</button></div></div></div><div class="course-option-section"><div class="course-option-label">Rounds</div><div class="course-option-buttons"><button class="secondary" id="editTimesPlayed">Edit Times Played</button><button class="secondary" id="viewDeleteRounds">View / Delete Rounds</button></div></div></div></div>
 <div class="backdrop" id="roundmodal"><div class="modal"><div class="modalhead"><div><div class="eyebrow">Round history</div><h3 id="roundModalTitle">Rounds</h3></div><button class="modalclose" id="roundClose" aria-label="Close">×</button></div><div class="sub" id="roundModalSub">Your logged rounds for this course.</div><div id="roundHistoryList" class="roundhistory-list"></div><div class="actions"><button class="secondary" id="roundDone">Done</button></div></div></div><div class="backdrop" id="authmodal">
 <div class="modal authmodal">
@@ -762,8 +762,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T12:00:00-04:00";
-const APP_VERSION="v85";
+const APP_BUILD_UPDATED_AT="2026-09-14T12:15:00-04:00";
+const APP_VERSION="v86";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -935,9 +935,10 @@ async function ensureDbCourse(c,apiMeta=null){
   if(exact){cloudCourseMap.set(String(c.id),String(exact.id));return String(exact.id)}
 
   const locParts=String(c.location||"").split(",").map(x=>x.trim()).filter(Boolean);
-  const countryGuess=wantedCountry||c.country||"USA";
-  const stateGuess=countryGuess==="USA" && (locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null;
-  const cityGuess=locParts.length>1?locParts[0]:null;
+  const countryGuess=String(c.country||"").trim()||wantedCountry||"USA";
+  const normalizedCountry=courseCountryFromLocation("",countryGuess);
+  const stateGuess=normalizedCountry==="USA" && (locParts[locParts.length-1]||"").length===2 ? locParts[locParts.length-1] : null;
+  const cityGuess=locParts.length>1?locParts[0]:(locParts.length===1 && normalizedCountry==="USA" && !stateGuess?locParts[0]:null);
   const ins=await supabaseClient.from("courses").insert({name:wantedName,city:cityGuess,state:stateGuess,country:countryGuess,logo_url:c.logo||null,website_url:c.website||null}).select("id").single();
   if(ins.error)throw ins.error;
   cloudCourseMap.set(String(c.id),String(ins.data.id));
@@ -1860,9 +1861,10 @@ document.getElementById("add").onclick=()=>{modal.classList.remove("open");addmo
 document.getElementById("addclose").onclick=()=>addmodal.classList.remove("open");
 document.getElementById("save").onclick=async()=>{
   if(!currentUser||!supabaseClient){toast("Sign in before adding a course");return}
-  let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();
+  let name=document.getElementById("newname").value.trim(),loc=document.getElementById("newloc").value.trim(),country=document.getElementById("newcountry").value.trim(),logo=document.getElementById("newlogo").value.trim(),requestedRank=document.getElementById("newrank").value.trim();
   if(!name)return toast("Enter a course name");
-  let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",region:"custom",world:null,usa:null,michigan:null,logo};
+  if(!country)return toast("Enter a country");
+  let c={id:"custom-"+Date.now(),name,location:loc||"Location not specified",country,region:"custom",world:null,usa:null,michigan:null,logo};
   // Persist the user's custom course record before touching the network. A
   // refresh, tab suspension, or failed Supabase request must never erase the
   // course identity or its position.
@@ -1883,7 +1885,7 @@ document.getElementById("save").onclick=async()=>{
     await loadCloudState();
     if(activeStateOwner!==String(currentUser.id))return;
     renderTop();renderMine();
-    addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newlogo").value="";document.getElementById("newrank").value="";toast(`Course added at #${rank}`);
+    addmodal.classList.remove("open");document.getElementById("newname").value="";document.getElementById("newloc").value="";document.getElementById("newcountry").value="";document.getElementById("newlogo").value="";document.getElementById("newrank").value="";toast(`Course added at #${rank}`);
   }catch(e){console.warn("Add course failed",e);toast("Could not save the course/round. Try again")}
 };
 
