@@ -553,7 +553,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v127";
+const APP_VERSION="v129";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -2114,6 +2114,11 @@ function friendCourseIsMine(course){
  if(currentFriendMyCourseIds.has(String(course.id)))return true;
  return currentFriendMyCourseRecords.some(mc=>friendCoursesExactlyEquivalent(course,mc));
 }
+async function addFriendCourseToMyList(courseId,button){
+  // Friends uses the exact same add-to-My-List flow as Top 100.
+  // Keeping one implementation prevents the two buttons from drifting apart.
+  return addTopCourseToMyList(courseId,button);
+}
 function renderFriendRows(){
   const list=document.getElementById("friendsList");
   if(!list)return;
@@ -2359,17 +2364,29 @@ if(supabaseClient){
     if(cloudHydratedUserId===currentUser.id)return;
     cloudHydratedUserId=currentUser.id;
     try{
-      // Friends is the lightweight, independent directory. Load it first so
-      // opening Friends never waits behind rankings or My List hydration.
-      // Friends must never block account hydration. Fire the lightweight directory
-      // request independently; the Friends tab also calls this directly.
-      loadFriendsDirectory().catch(e=>console.warn("Friends background load failed",e));
-      await supabaseClient.from("profiles").upsert(
-        {id:currentUser.id,email:currentUser.email||"",username:currentUser.user_metadata?.username||((currentUser.email||"").split("@")[0]),display_name:currentUser.user_metadata?.username||((currentUser.email||"").split("@")[0])},
-        {onConflict:"id"}
-      );
-      await migrateAndLoadCloud();
-      renderTop();renderMine();
+      // Friends is deliberately isolated from account hydration. Do not preload
+      // the Friends directory and do not write to profiles on every sign-in.
+      // The Friends tab fetches profiles only when the user opens it.
+      const finishCloudHydration=async()=>{
+        // Friends must remain a completely independent path. If the user is in
+        // Friends, wait until they leave before doing any My List/cloud work.
+        if(document.getElementById("friends")?.classList.contains("active")){
+          setTimeout(finishCloudHydration,2000);
+          return;
+        }
+        try{
+          await migrateAndLoadCloud();
+          renderTop();renderMine();
+        }catch(e){
+          console.warn("Deferred cloud account load failed",e);
+          if(activeStateOwner===String(nextUser.id) && currentUser && String(currentUser.id)===String(nextUser.id)){
+            renderTop();renderMine();
+          }
+        }
+      };
+      // Give the interactive UI a clean startup. No cloud My List work runs
+      // while Friends is active.
+      setTimeout(finishCloudHydration,1500);
     }catch(e){
       console.warn("Cloud account load failed",e);
       // A previous account's async request can finish after the user has
