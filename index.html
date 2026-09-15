@@ -636,7 +636,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v121";
+const APP_VERSION="v122";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -2237,7 +2237,7 @@ async function loadFriendsDirectory(){
     console.warn("Friends directory load failed",e);
     sel.innerHTML='<option value="">Friends unavailable</option>';
     const msg=String(e?.message||e||"Unable to load friends");
-    list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small><br><button type="button" class="secondary" style="margin-top:12px" onclick="loadFriendsDirectory()">Try Again</button></div>`;
+    list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
   }finally{sel.disabled=false}
 }
 async function addFriendCourseToMyList(dbid,button){
@@ -2476,6 +2476,11 @@ if(supabaseClient){
       renderTop();renderMine();
     }
     setAuthStatus(currentUser.email||"Signed in",true);
+    // Friends must not wait for full account hydration/migration. That path
+    // loads all rounds and memberships and can be much slower than Friends.
+    if(document.getElementById("friends")?.classList.contains("active")){
+      loadFriendsDirectory();
+    }
     if(cloudHydratedUserId===currentUser.id)return;
     cloudHydratedUserId=currentUser.id;
     try{
@@ -2485,7 +2490,6 @@ if(supabaseClient){
       );
       await migrateAndLoadCloud();
       renderTop();renderMine();
-      if(document.getElementById("friends")?.classList.contains("active"))loadFriendsDirectory();
     }catch(e){
       console.warn("Cloud account load failed",e);
       // A previous account's async request can finish after the user has
