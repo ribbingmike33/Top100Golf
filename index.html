@@ -553,7 +553,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v129";
+const APP_VERSION="v130";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1642,11 +1642,8 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");document.getElementById(b.dataset.page).classList.add("active");
   document.getElementById("topsearch").blur();document.getElementById("mysearch").blur();exitMobileSearch();
-  if(b.dataset.page==="friends"){
-    loadFriendsDirectory();
-    return;
-  }
   renderTop();renderMine();
+  if(b.dataset.page==="friends")loadFriendsDirectory();
 });
 document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
@@ -2078,7 +2075,6 @@ document.getElementById("save").onclick=async()=>{
 
 
 let friendsCache=[];
-let friendsDirectoryPromise=null;
 let selectedFriendId="";
 let friendsFilter="all";
 let currentFriendRows=[];
@@ -2089,35 +2085,10 @@ function syncFriendsFilterUI(){
   const select=document.getElementById("friendsFilter");
   if(select)select.value=friendsFilter;
 }
-function friendCourseIdentityKey(course){
- if(!course)return "";
- const staticMatch=staticCourseForCloudRecord(course);
- const c=staticMatch||course;
- const name=norm(c.name||"");
- const canonicalLoc=canonicalCourseLocations.get(name);
- if(canonicalLoc)return `canonical:${name}|${norm(canonicalLoc)}`;
- const loc=norm([c.city,c.state,c.country].filter(Boolean).join(", ")||c.location||"");
- return `course:${name}|${loc}`;
-}
-function friendCoursesExactlyEquivalent(a,b){
- if(!a||!b)return false;
- const ka=friendCourseIdentityKey(a),kb=friendCourseIdentityKey(b);
- if(ka&&ka===kb)return true;
- const an=norm(a.name||""),bn=norm(b.name||"");
- if(!an||an!==bn)return false;
- const al=norm([a.city,a.state,a.country].filter(Boolean).join(", ")||a.location||"");
- const bl=norm([b.city,b.state,b.country].filter(Boolean).join(", ")||b.location||"");
- return !!al&&!!bl&&al===bl;
-}
 function friendCourseIsMine(course){
- if(!course)return false;
- if(currentFriendMyCourseIds.has(String(course.id)))return true;
- return currentFriendMyCourseRecords.some(mc=>friendCoursesExactlyEquivalent(course,mc));
-}
-async function addFriendCourseToMyList(courseId,button){
-  // Friends uses the exact same add-to-My-List flow as Top 100.
-  // Keeping one implementation prevents the two buttons from drifting apart.
-  return addTopCourseToMyList(courseId,button);
+  if(!course)return false;
+  if(currentFriendMyCourseIds.has(String(course.id)))return true;
+  return currentFriendMyCourseRecords.some(mc=>searchCoursesEquivalent(course,mc));
 }
 function renderFriendRows(){
   const list=document.getElementById("friendsList");
@@ -2152,126 +2123,130 @@ function renderFriendRows(){
 }
 
 async function loadFriendsDirectory(){
+  friendsFilter="all";
+  syncFriendsFilterUI();
   const sel=document.getElementById("friendSelect"),list=document.getElementById("friendsList");
   if(!sel||!list)return;
-  if(!currentUser||!supabaseClient){
-    sel.innerHTML='<option value="">Sign in to see friends…</option>';
-    list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';
-    return;
-  }
-  // If we already have the directory, switching back to Friends is instant.
-  if(friendsCache.length){
-    sel.disabled=false;
+  if(!currentUser||!supabaseClient){sel.innerHTML='<option value="">Sign in to see friends…</option>';list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';return}
+  sel.disabled=true;list.innerHTML='<div class="friends-loading">Loading friends…</div>';
+  try{
+    const {data,error}=await supabaseClient.from("profiles").select("id,username,display_name,email").order("username",{ascending:true});
+    if(error)throw error;
+    friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
     sel.innerHTML='<option value="">Select a friend…</option>';
     friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.username||f.display_name||f.email||"Member";sel.appendChild(o)});
-    if(selectedFriendId)sel.value=selectedFriendId;
-    list.innerHTML=selectedFriendId
-      ? '<div class="friends-loading">Loading their My List…</div>'
-      : '<div class="friends-empty">Select a friend above to view their My List.</div>';
-    return;
-  }
-  // Never allow multiple directory requests to stack up.
-  if(friendsDirectoryPromise)return friendsDirectoryPromise;
-  sel.disabled=true;
-  list.innerHTML='<div class="friends-loading">Loading friends…</div>';
-  friendsDirectoryPromise=(async()=>{
-    try{
-      const {data,error}=await supabaseClient.from("profiles").select("id,username,display_name,email").order("username",{ascending:true});
-      if(error)throw error;
-      friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
-      sel.innerHTML='<option value="">Select a friend…</option>';
-      friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.username||f.display_name||f.email||"Member";sel.appendChild(o)});
-      if(selectedFriendId)sel.value=selectedFriendId;
-      list.innerHTML=friendsCache.length
-        ? '<div class="friends-empty">Select a friend above to view their My List.</div>'
-        : '<div class="friends-empty">No other registered members yet.</div>';
-    }catch(e){
-      console.warn("Friends directory load failed",e);
-      sel.innerHTML='<option value="">Friends unavailable</option>';
-      const msg=String(e?.message||e||"Unable to load friends");
-      list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
-    }finally{
-      sel.disabled=false;
-      friendsDirectoryPromise=null;
+    if(!friendsCache.length){list.innerHTML='<div class="friends-empty">No other registered members yet.</div>';return}
+    list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
+  }catch(e){
+    console.warn("Friends directory load failed",e);
+    sel.innerHTML='<option value="">Friends unavailable</option>';
+    const msg=String(e?.message||e||"Unable to load friends");
+    list.innerHTML=`<div class="friends-empty">Could not load the Friends directory.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
+  }finally{sel.disabled=false}
+}
+async function addFriendCourseToMyList(dbid,button){
+  if(!currentUser||!supabaseClient){toast("Sign in to add courses");return}
+  if(activeStateOwner!==String(currentUser.id)){toast("Account is still connecting — try again");return}
+  if(!dbid)return;
+  if(button){button.disabled=true;button.textContent="Adding…"}
+  try{
+    const existing=await supabaseClient.from("user_courses")
+      .select("id,personal_rank,times_played").eq("user_id",currentUser.id).eq("course_id",dbid).limit(1);
+    if(existing.error)throw existing.error;
+    if((existing.data||[]).length){
+      if(button){button.textContent="On my list"}
+      return;
     }
-  })();
-  return friendsDirectoryPromise;
+    const {data:myMemberships,error:myMembershipError}=await supabaseClient.from("user_courses")
+      .select("course_id").eq("user_id",currentUser.id);
+    if(myMembershipError)throw myMembershipError;
+    const myIds=[...(myMemberships||[])].map(r=>r.course_id).filter(Boolean);
+    if(myIds.length){
+      const {data:myCourses,error:myCoursesError}=await supabaseClient.from("courses")
+        .select("id,name,city,state,country,logo_url,website_url").in("id",myIds);
+      if(myCoursesError)throw myCoursesError;
+      const friendCourse=get(dbid) || courses.find(x=>String(x.id)===String(dbid)) || null;
+      const equivalent=friendCourse && (myCourses||[]).some(mc=>searchCoursesEquivalent(
+        friendCourse,
+        {...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}
+      ));
+      if(equivalent){
+        if(button){button.textContent="On my list";button.disabled=true}
+        return;
+      }
+    }
+    const playedAt=new Date().toISOString();
+    const roundIns=await supabaseClient.from("rounds").insert({
+      user_id:currentUser.id,course_id:dbid,played_at:playedAt
+    }).select("id").single();
+    if(roundIns.error)throw roundIns.error;
+    const bottomRank=Math.max(1,state.myList.length+1);
+    const ins=await supabaseClient.from("user_courses").insert({
+      user_id:currentUser.id,course_id:dbid,times_played:1,personal_rank:bottomRank,updated_at:playedAt
+    });
+    if(ins.error){
+      if(roundIns.data?.id){
+        const rollback=await supabaseClient.from("rounds").delete().eq("id",roundIns.data.id).eq("user_id",currentUser.id);
+        if(rollback.error)console.warn("Friend-course round rollback failed",rollback.error);
+      }
+      throw ins.error;
+    }
+    await loadCloudState();
+    if(activeStateOwner!==String(currentUser.id))return;
+    renderMine();
+    if(button){button.textContent="On my list";button.disabled=true}
+    // Update the already-loaded Friends view immediately so the course moves
+    // from Not on my list to My courses without requiring a friend reload.
+    currentFriendMyCourseIds.add(String(dbid));
+    const added=get(dbid);
+    if(added){currentFriendMyCourseRecords.push({...added,location:added.location||[added.city,added.state,added.country].filter(Boolean).join(", ")});}
+    renderFriendRows();
+    toast("Course added to My List");
+  }catch(e){
+    console.warn("Friend course add failed",e);
+    if(button){button.disabled=false;button.textContent="Add to my list"}
+    toast("Could not add course. Try again");
+  }
 }
 async function loadFriendList(friendId){
- const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
- if(!friendId){
-  currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];
-  list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
-  label.textContent="Personal ranking";return;
- }
- const friend=friendsCache.find(x=>String(x.id)===String(friendId)); if(!friend)return;
- list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
- label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
- try{
-  // Friends only needs the selected friend's memberships plus the course records
-  // referenced by those memberships. The old implementation also reloaded the
-  // entire current user's membership/catalog, which could create many requests
-  // and leave the UI looking stuck. Use the already-hydrated local My List for
-  // the "On My List" comparison instead.
-  const friendMembership=await Promise.race([
-    supabaseClient.from("user_courses")
-      .select("course_id,personal_rank,times_played")
-      .eq("user_id",friend.id)
-      .order("personal_rank",{ascending:true}),
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error("Friend list request timed out")),12000))
-  ]);
-  if(friendMembership.error)throw friendMembership.error;
-
-  const rows=friendMembership.data||[];
-  const friendIds=[...new Set(rows.map(r=>r.course_id).filter(Boolean))];
-  const friendCatalog=new Map();
-
-  // Build the current user's comparison set from the local authoritative list.
-  currentFriendMyCourseIds=new Set((state.myList||[]).map(String));
-  currentFriendMyCourseRecords=(state.myList||[])
-    .map(id=>get(id))
-    .filter(Boolean)
-    .map(c=>canonicalizeCourse({...c}));
-
-  // Fetch the selected friend's course records in small parallel batches.
-  const friendBatches=[];
-  for(let i=0;i<friendIds.length;i+=50){
-   friendBatches.push(
-    supabaseClient.from("courses")
-      .select("id,name,city,state,country,logo_url,website_url")
-      .in("id",friendIds.slice(i,i+50))
-   );
+  const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
+  if(!friendId){currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';label.textContent="Personal ranking";return}
+  const friend=friendsCache.find(x=>String(x.id)===String(friendId));
+  if(!friend)return;
+  list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
+  label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
+  try{
+    const {data:rows,error}=await supabaseClient.from("user_courses").select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true});
+    if(error)throw error;
+    const ids=[...(rows||[])].map(r=>r.course_id).filter(Boolean);
+    let catalog=new Map();
+    if(ids.length){
+      const {data:cr,error:ce}=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").in("id",ids);
+      if(ce)throw ce;
+      (cr||[]).forEach(c=>catalog.set(String(c.id),c));
+    }
+    let myCourseIds=new Set((state.myList||[]).map(String));
+    const {data:myRows,error:myError}=await supabaseClient.from("user_courses")
+      .select("course_id").eq("user_id",currentUser.id);
+    if(myError)throw myError;
+    (myRows||[]).forEach(r=>{if(r?.course_id)myCourseIds.add(String(r.course_id))});
+    const myCloudIds=[...(myRows||[])].map(r=>r?.course_id).filter(Boolean);
+    let myCourseRecords=[];
+    if(myCloudIds.length){
+      const {data:myCourses,error:myCoursesError}=await supabaseClient.from("courses")
+        .select("id,name,city,state,country,logo_url,website_url").in("id",myCloudIds);
+      if(myCoursesError)throw myCoursesError;
+      myCourseRecords=(myCourses||[]).map(mc=>({...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}));
+    }
+    currentFriendRows=(rows||[]).map((r,index)=>{const c=catalog.get(String(r.course_id));return c?{row:r,index,course:c}:null}).filter(Boolean);
+    currentFriendMyCourseIds=myCourseIds;
+    currentFriendMyCourseRecords=myCourseRecords;
+    renderFriendRows();
+  }catch(e){
+    console.warn("Friend list load failed",e);
+    currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];
+    list.innerHTML='<div class="friends-empty">Could not load this friend’s list. Check the Supabase read policies and try again.</div>';
   }
-  const friendResults=await Promise.race([
-    Promise.all(friendBatches),
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error("Friend course data request timed out")),12000))
-  ]);
-  for(const result of friendResults){
-   if(result.error)throw result.error;
-   (result.data||[]).forEach(c=>friendCatalog.set(String(c.id),c));
-  }
-
-  currentFriendRows=rows.map((r,index)=>{
-   const raw=friendCatalog.get(String(r.course_id)); if(!raw)return null;
-   const canonical=staticCourseForCloudRecord(raw);
-   const c=canonical||{
-    id:`cloud-${raw.id}`,name:String(raw.name),
-    location:[raw.city,raw.state,raw.country].filter(Boolean).join(", ")||"Location not specified",
-    city:raw.city||"",state:raw.state||"",country:raw.country||"",
-    region:raw.country==="USA"?"usa":"world",world:null,usa:null,michigan:null,public:null,
-    logo:raw.logo_url||"",website:raw.website_url||""
-   };
-   if(canonical)cloudCourseMap.set(String(canonical.id),String(raw.id));
-   return {row:r,index,course:c,raw};
-  }).filter(Boolean);
-
-  renderFriendRows();
- }catch(e){
-  console.warn("Friend list load failed",e);
-  currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];
-  const msg=String(e?.message||e||"Unable to load this friend’s list");
-  list.innerHTML=`<div class="friends-empty">Could not load this friend’s list.<br><small>${msg.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]))}</small></div>`;
- }
 }
 document.getElementById("friendsFilter")?.addEventListener("change",e=>{
   friendsFilter=e.target.value||"all";
