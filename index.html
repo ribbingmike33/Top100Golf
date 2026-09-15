@@ -627,8 +627,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T16:45:00-04:00";
-const APP_VERSION="v113";
+const APP_BUILD_UPDATED_AT="2026-09-15T17:00:00-04:00";
+const APP_VERSION="v114";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1276,9 +1276,14 @@ function renderTop(){
  let q=document.getElementById("topsearch").value.toLowerCase();
  const rankingType=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"usa_public":null;
  let arr;
- if(rankingType && cloudRankingsLoaded){
-   arr=cloudRankings
-     .filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
+ const cloudForType=rankingType
+   ? cloudRankings.filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
+   : [];
+ const cloudComplete=cloudForType.length===100 &&
+   new Set(cloudForType.map(r=>Number(r.rank))).size===100 &&
+   cloudForType.every(r=>r?.course?.id&&r?.course?.name);
+ if(rankingType && cloudRankingsLoaded && cloudComplete){
+   arr=cloudForType
      .map(r=>({...r.course, _rankingRank:Number(r.rank)}))
      .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
      .sort((a,b)=>a._rankingRank-b._rankingRank);
@@ -1309,8 +1314,8 @@ function renderTop(){
    mineToggle.classList.toggle("active",showTopMine);
    mineToggle.setAttribute("aria-pressed",String(showTopMine));
  }
- const top=rankingType && cloudRankingsLoaded
-   ? cloudRankings.filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
+ const top=rankingType && cloudRankingsLoaded && cloudComplete
+   ? cloudForType
    : arr;
  const played=top.filter(r=>count(r.course?r.course.id:r.id)).length;
  document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":"Michigan - All")+" Top 100";
@@ -2130,10 +2135,30 @@ function syncFriendsFilterUI(){
   const select=document.getElementById("friendsFilter");
   if(select)select.value=friendsFilter;
 }
+function friendCourseIdentityKey(course){
+ if(!course)return "";
+ const staticMatch=staticCourseForCloudRecord(course);
+ const c=staticMatch||course;
+ const name=norm(c.name||"");
+ const canonicalLoc=canonicalCourseLocations.get(name);
+ if(canonicalLoc)return `canonical:${name}|${norm(canonicalLoc)}`;
+ const loc=norm([c.city,c.state,c.country].filter(Boolean).join(", ")||c.location||"");
+ return `course:${name}|${loc}`;
+}
+function friendCoursesExactlyEquivalent(a,b){
+ if(!a||!b)return false;
+ const ka=friendCourseIdentityKey(a),kb=friendCourseIdentityKey(b);
+ if(ka&&ka===kb)return true;
+ const an=norm(a.name||""),bn=norm(b.name||"");
+ if(!an||an!==bn)return false;
+ const al=norm([a.city,a.state,a.country].filter(Boolean).join(", ")||a.location||"");
+ const bl=norm([b.city,b.state,b.country].filter(Boolean).join(", ")||b.location||"");
+ return !!al&&!!bl&&al===bl;
+}
 function friendCourseIsMine(course){
-  if(!course)return false;
-  if(currentFriendMyCourseIds.has(String(course.id)))return true;
-  return currentFriendMyCourseRecords.some(mc=>searchCoursesEquivalent(course,mc));
+ if(!course)return false;
+ if(currentFriendMyCourseIds.has(String(course.id)))return true;
+ return currentFriendMyCourseRecords.some(mc=>friendCoursesExactlyEquivalent(course,mc));
 }
 function renderFriendRows(){
   const list=document.getElementById("friendsList");
@@ -2219,7 +2244,7 @@ async function addFriendCourseToMyList(dbid,button){
         .select("id,name,city,state,country,logo_url,website_url").in("id",myIds);
       if(myCoursesError)throw myCoursesError;
       const friendCourse=targetCourse;
-      const equivalent=friendCourse && (myCourses||[]).some(mc=>searchCoursesEquivalent(
+      const equivalent=friendCourse && (myCourses||[]).some(mc=>friendCoursesExactlyEquivalent(
         friendCourse,
         {...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}
       ));
@@ -2262,68 +2287,74 @@ async function addFriendCourseToMyList(dbid,button){
   }
 }
 async function loadFriendList(friendId){
-  const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
-  if(!friendId){currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';label.textContent="Personal ranking";return}
-  const friend=friendsCache.find(x=>String(x.id)===String(friendId));
-  if(!friend)return;
-  list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
-  label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
-  try{
-    const {data:rows,error}=await supabaseClient.from("user_courses").select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true});
-    if(error)throw error;
-    const ids=[...(rows||[])].map(r=>r.course_id).filter(Boolean);
-    let catalog=new Map();
-    if(ids.length){
-      const {data:cr,error:ce}=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").in("id",ids);
-      if(ce)throw ce;
-      (cr||[]).forEach(c=>catalog.set(String(c.id),c));
-    }
-    let myCourseIds=new Set((state.myList||[]).map(String));
-    const {data:myRows,error:myError}=await supabaseClient.from("user_courses")
-      .select("course_id").eq("user_id",currentUser.id);
-    if(myError)throw myError;
-    (myRows||[]).forEach(r=>{if(r?.course_id)myCourseIds.add(String(r.course_id))});
-    const myCloudIds=[...(myRows||[])].map(r=>r?.course_id).filter(Boolean);
-    let myCourseRecords=[];
-    let myCourses=[];
-    if(myCloudIds.length){
-      const {data:myCourseRows,error:myCoursesError}=await supabaseClient.from("courses")
-        .select("id,name,city,state,country,logo_url,website_url").in("id",myCloudIds);
-      if(myCoursesError)throw myCoursesError;
-      myCourses=myCourseRows||[];
-      myCourseRecords=myCourses.map(mc=>({...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}));
-    }
-    // Resolve every friend course through the same canonical Course Book
-    // identity resolver used by My List and round logging. The raw Supabase
-    // course_id is only storage identity; it must never decide whether a
-    // course is the same real-world course as one in the canonical catalog.
-    currentFriendRows=(rows||[]).map((r,index)=>{
-      const raw=catalog.get(String(r.course_id));
-      const c=resolveLocal(raw);
-      return c?{row:r,index,course:c}:null;
-    }).filter(Boolean);
+ const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
+ if(!friendId){
+  currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];
+  list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
+  label.textContent="Personal ranking";return;
+ }
+ const friend=friendsCache.find(x=>String(x.id)===String(friendId)); if(!friend)return;
+ list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
+ label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
+ try{
+  const {data:rows,error}=await supabaseClient.from("user_courses")
+   .select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true});
+  if(error)throw error;
 
-    // Build the user's own comparison set using canonical Course Book records
-    // as well. This fixes cases where a friend's Jubilee/Glen row points at a
-    // different Supabase UUID than the canonical Course Book course.
-    const canonicalMyIds=new Set();
-    const canonicalMyRecords=[];
-    for(const rawId of myCourseIds){
-      const raw=myCourses?.find(x=>String(x.id)===String(rawId));
-      const c=resolveLocal(raw);
-      if(c){
-        canonicalMyIds.add(String(c.id));
-        canonicalMyRecords.push({...c});
-      }else if(rawId)canonicalMyIds.add(String(rawId));
-    }
-    currentFriendMyCourseIds=canonicalMyIds;
-    currentFriendMyCourseRecords=canonicalMyRecords;
-    renderFriendRows();
-  }catch(e){
-    console.warn("Friend list load failed",e);
-    currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];
-    list.innerHTML='<div class="friends-empty">Could not load this friend’s list. Check the Supabase read policies and try again.</div>';
+  const friendIds=[...(rows||[])].map(r=>r.course_id).filter(Boolean);
+  const friendCatalog=new Map();
+  for(let i=0;i<friendIds.length;i+=50){
+   const {data:cr,error:ce}=await supabaseClient.from("courses")
+    .select("id,name,city,state,country,logo_url,website_url").in("id",friendIds.slice(i,i+50));
+   if(ce)throw ce;
+   (cr||[]).forEach(c=>friendCatalog.set(String(c.id),c));
   }
+
+  const {data:myRows,error:myError}=await supabaseClient.from("user_courses")
+   .select("course_id").eq("user_id",currentUser.id);
+  if(myError)throw myError;
+  const myIds=[...(myRows||[])].map(r=>r.course_id).filter(Boolean);
+  const myCatalog=new Map();
+  for(let i=0;i<myIds.length;i+=50){
+   const {data:mc,error:me}=await supabaseClient.from("courses")
+    .select("id,name,city,state,country,logo_url,website_url").in("id",myIds.slice(i,i+50));
+   if(me)throw me;
+   (mc||[]).forEach(c=>myCatalog.set(String(c.id),c));
+  }
+
+  const canonicalMyIds=new Set((state.myList||[]).map(String));
+  const canonicalMyRecords=[];
+  for(const raw of myCatalog.values()){
+   const canonical=staticCourseForCloudRecord(raw);
+   const record=canonical||{...raw,location:[raw.city,raw.state,raw.country].filter(Boolean).join(", ")};
+   canonicalMyRecords.push(record);
+   canonicalMyIds.add(String(record.id));
+   canonicalMyIds.add(String(raw.id));
+   if(canonical)cloudCourseMap.set(String(canonical.id),String(raw.id));
+  }
+
+  currentFriendRows=(rows||[]).map((r,index)=>{
+   const raw=friendCatalog.get(String(r.course_id)); if(!raw)return null;
+   const canonical=staticCourseForCloudRecord(raw);
+   const c=canonical||{
+    id:`cloud-${raw.id}`,name:String(raw.name),
+    location:[raw.city,raw.state,raw.country].filter(Boolean).join(", ")||"Location not specified",
+    city:raw.city||"",state:raw.state||"",country:raw.country||"",
+    region:raw.country==="USA"?"usa":"world",world:null,usa:null,michigan:null,public:null,
+    logo:raw.logo_url||"",website:raw.website_url||""
+   };
+   if(canonical)cloudCourseMap.set(String(canonical.id),String(raw.id));
+   return {row:r,index,course:c,raw};
+  }).filter(Boolean);
+
+  currentFriendMyCourseIds=canonicalMyIds;
+  currentFriendMyCourseRecords=canonicalMyRecords;
+  renderFriendRows();
+ }catch(e){
+  console.warn("Friend list load failed",e);
+  currentFriendRows=[];currentFriendMyCourseIds=new Set();currentFriendMyCourseRecords=[];
+  list.innerHTML='<div class="friends-empty">Could not load this friend’s list. Check the Supabase read policies and try again.</div>';
+ }
 }
 document.getElementById("friendsFilter")?.addEventListener("change",e=>{
   friendsFilter=e.target.value||"all";
