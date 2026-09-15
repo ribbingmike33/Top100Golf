@@ -24,12 +24,12 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .label{text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);font-size:11px;margin:24px 0 10px}.list{display:flex;flex-direction:column;gap:7px}
 .row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
-.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:0!important;z-index:1;transform:none!important}.rankrow.drag-placeholder{display:grid;visibility:visible!important;min-height:73px;padding:10px 13px;border:2px dashed rgba(199,170,107,.65);border-radius:11px;background:rgba(199,170,107,.05);box-shadow:inset 0 0 0 1px rgba(199,170,107,.12);pointer-events:none}.drag-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none!important;display:grid;grid-template-columns:27px 32px 46px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;border-radius:11px;background:#f4ecd8!important;border:2px solid #f4ecd8!important;color:#10281c!important;box-shadow:0 30px 70px rgba(0,0,0,.62),0 12px 24px rgba(0,0,0,.42);transform:scale(1.045);transform-origin:center center;will-change:transform,left,top}.drag-ghost *{color:#10281c!important}.drag-ghost .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)!important}.course-dragging{overflow:hidden!important;touch-action:none!important}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.10);box-shadow:inset 0 0 0 2px rgba(199,170,107,.30)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}.roundslink{display:inline-flex;align-items:center;gap:3px;border:0;background:none;color:var(--cream);padding:0;margin:0;font:inherit;cursor:pointer;text-align:right}.roundslink strong{color:var(--cream);font-size:13px}.roundslink span{color:var(--muted);font-size:11px}.roundhistory-list{max-height:52vh;overflow:auto;margin:0 -2px 12px}.roundhistory-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.roundhistory-row:last-child{border-bottom:0}.roundhistory-date{font-size:13px;color:var(--cream)}.roundhistory-date small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.delete-round{border:1px solid rgba(180,90,90,.45);background:rgba(180,90,90,.08);color:#f0caca;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap}.deleteround-inline{border:0;background:none;color:#d9a7a7;padding:0 0 0 8px;margin:0;font-size:11px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.roundhistory-empty{text-align:center;color:var(--muted);padding:20px 0}
+.rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:0!important;z-index:1;transform:none!important}.rankrow.drag-placeholder{display:grid;visibility:visible!important;min-height:73px;padding:10px 13px;border:2px dashed rgba(199,170,107,.65);border-radius:11px;background:rgba(199,170,107,.05);box-shadow:inset 0 0 0 1px rgba(199,170,107,.12);pointer-events:none}.drag-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none!important;display:grid;grid-template-columns:27px 32px 46px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;border-radius:11px;background:#f4ecd8!important;border:2px solid #f4ecd8!important;color:#10281c!important;box-shadow:0 30px 70px rgba(0,0,0,.62),0 12px 24px rgba(0,0,0,.42);transform:scale(1.045);transform-origin:center center;will-change:transform,left,top}.drag-ghost *{color:#10281c!important}.drag-ghost .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)!important}.course-dragging{touch-action:none!important}.friend-picker-wrap{display:flex;align-items:center;gap:10px}.friend-picker-wrap label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1.4px}.friend-picker-wrap select{min-width:280px;height:43px;padding:0 36px 0 13px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.045);color:var(--cream);font-size:13px;outline:0}.friend-picker-wrap select:focus{border-color:rgba(199,170,107,.5)}.friend-row{cursor:default!important}.friend-row .handle{visibility:hidden}.friends-empty{padding:30px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted);text-align:center}.friends-loading{padding:25px 10px;color:var(--muted);text-align:center}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.10);box-shadow:inset 0 0 0 2px rgba(199,170,107,.30)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}.roundslink{display:inline-flex;align-items:center;gap:3px;border:0;background:none;color:var(--cream);padding:0;margin:0;font:inherit;cursor:pointer;text-align:right}.roundslink strong{color:var(--cream);font-size:13px}.roundslink span{color:var(--muted);font-size:11px}.roundhistory-list{max-height:52vh;overflow:auto;margin:0 -2px 12px}.roundhistory-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.roundhistory-row:last-child{border-bottom:0}.roundhistory-date{font-size:13px;color:var(--cream)}.roundhistory-date small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.delete-round{border:1px solid rgba(180,90,90,.45);background:rgba(180,90,90,.08);color:#f0caca;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap}.deleteround-inline{border:0;background:none;color:#d9a7a7;padding:0 0 0 8px;margin:0;font-size:11px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.roundhistory-empty{text-align:center;color:var(--muted);padding:20px 0}
 .rankactions{display:flex;gap:7px;margin-top:10px}.rankaction{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--cream);padding:9px 10px;border-radius:8px;font-size:12px;font-weight:700}.rankaction.primary-rank{background:var(--cream);color:var(--bg);border-color:var(--cream)}.rankmoveinput{width:100%;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:9px;color:var(--cream);padding:0 12px;font-size:18px;outline:0}.rankmovehint{font-size:12px;color:var(--muted);margin-top:6px}.rankmodal-course{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.035);margin-bottom:16px}.rankmodal-course strong{display:block;font-family:'Playfair Display';font-size:20px;color:var(--cream)}.rankmodal-course span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.course-option-section{margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.08)}.course-option-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}.course-option-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.course-option-buttons button{margin:0;min-height:42px}@media(max-width:760px){.rankactions{margin-top:8px}.rankaction{padding:10px 7px}}
 .empty{text-align:center;padding:65px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted)}.empty h3{font:600 25px 'Playfair Display';color:var(--cream);margin:0 0 7px}
 .backdrop{position:fixed;inset:0;background:rgba(2,8,5,.78);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.backdrop.open{display:flex}.modal{width:min(520px,100%);background:#10281c;border:1px solid var(--line);border-radius:17px;padding:26px;box-shadow:0 30px 90px #0008}.modal h3{font:600 28px 'Playfair Display';margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:20px}.group{margin-bottom:15px}.group label{display:block;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;font-size:10px;margin-bottom:6px}.group input{width:100%;height:44px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:8px;color:var(--cream);padding:0 11px;outline:0}.result{display:block;width:100%;text-align:left;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);color:var(--cream);padding:11px;border-radius:8px;margin:5px 0}.result small{display:block;color:var(--muted);margin-top:3px}.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}.secondary{border:1px solid var(--line);background:transparent;color:var(--cream);padding:11px 16px;border-radius:8px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:13px;font-weight:800;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;padding:10px}.row .meta{display:none}.row .gold{white-space:nowrap;text-align:right;font-size:12px}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px minmax(0,1fr) 52px;gap:8px;padding:9px}.rankrow>div{min-width:0}.rankrow .course{min-width:0;overflow-wrap:anywhere}.rankrow .loc{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.drag-ghost{grid-template-columns:22px 25px 42px minmax(0,1fr) 52px;gap:8px;padding:9px}.drag-ghost>div{min-width:0}}
+@media(max-width:760px){header{padding:0 16px;height:65px}nav{padding:17px 14px 0;overflow:auto}main{padding:22px 14px 60px}.hero{grid-template-columns:1fr}.copy{padding:10px 0}.controls{flex-direction:column;align-items:stretch}.seg{overflow:auto}.seg button{flex:1;white-space:nowrap}.search{width:100%}.row{grid-template-columns:34px 42px minmax(0,1fr) 78px;gap:9px;padding:10px}.row .meta{display:none}.row .gold{white-space:nowrap;text-align:right;font-size:12px}.course{font-size:16px}.listhead{flex-direction:column;align-items:stretch;gap:15px}.listhead .primary{width:100%}.rankrow{grid-template-columns:22px 25px 42px minmax(0,1fr) 52px;gap:8px;padding:9px}.rankrow>div{min-width:0}.rankrow .course{min-width:0;overflow-wrap:anywhere}.rankrow .loc{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.drag-ghost{grid-template-columns:22px 25px 42px minmax(0,1fr) 52px;gap:8px;padding:9px}.drag-ghost>div{min-width:0}.friend-picker-wrap{display:block}.friend-picker-wrap label{display:block;margin:0 0 6px}.friend-picker-wrap select{width:100%;min-width:0}}
 
 @media(max-width:760px){
   body.mobile-searching{overflow-x:hidden}
@@ -181,7 +181,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   
 </header>
 <div class="authbar" id="authbar"><div><span class="authdot"></span><span id="authLabel">Not signed in</span></div><button class="authbtn" id="authOpen">Sign in</button></div>
-<nav><button class="nav active" data-page="mine">My List</button><button class="nav" data-page="top">Top 100</button></nav>
+<nav><button class="nav active" data-page="mine">My List</button><button class="nav" data-page="friends">Friends</button><button class="nav" data-page="top">Top 100</button></nav>
 
 <main>
 <section id="top" class="page">
@@ -205,6 +205,14 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="search"><span>⌕</span><input id="mysearch" placeholder="Search my courses..."></div>
 </div>
 <div class="label">Personal ranking</div><div class="list" id="mylist"></div>
+</section>
+
+<section id="friends" class="page">
+<div class="listhead"><div><div class="eyebrow">Golfing with friends</div><h2>Friends</h2><p>View another member’s personal ranking. Friend lists are read-only.</p></div></div>
+<div class="controls friends-controls">
+<div class="friend-picker-wrap"><label for="friendSelect">Friend</label><select id="friendSelect"><option value="">Select a friend…</option></select></div>
+</div>
+<div class="label" id="friendsLabel">Personal ranking</div><div class="list" id="friendsList"></div>
 </section>
 </main>
 </div>
@@ -1291,12 +1299,22 @@ function moveCourse(dragId,targetId,pointerY,targetEl){
 }
 
 function addTouchDrag(el,box,id){
-  let dragging=false,active=false,timer=null,startY=0,mode=null,touchId=null,ghost=null,placeholder=null,startIndex=-1,grabOffsetX=0,grabOffsetY=0;
+  let dragging=false,active=false,timer=null,startY=0,mode=null,touchId=null,ghost=null,placeholder=null,startIndex=-1,grabOffsetX=0,grabOffsetY=0,lastX=0,lastY=0,scrollRaf=0;
   const handle=el.querySelector('.handle');
   const clear=()=>{if(timer){clearTimeout(timer);timer=null}};
   const clearOver=()=>box.querySelectorAll('.rankrow.over').forEach(x=>x.classList.remove('over'));
+  const stopAutoScroll=()=>{if(scrollRaf){cancelAnimationFrame(scrollRaf);scrollRaf=0}};
+  const autoScroll=()=>{
+    if(!dragging)return;
+    const h=window.innerHeight,edge=Math.min(110,Math.max(70,h*.16));
+    let delta=0;
+    if(lastY<edge){const strength=1-(Math.max(0,lastY)/edge);delta=-Math.max(3,Math.round(22*strength*strength));}
+    else if(lastY>h-edge){const strength=1-(Math.max(0,h-lastY)/edge);delta=Math.max(3,Math.round(22*strength*strength));}
+    if(delta){window.scrollBy(0,delta);placePlaceholder(lastX,lastY);updateGhost(lastX,lastY)}
+    scrollRaf=requestAnimationFrame(autoScroll);
+  };
   const cleanup=()=>{
-    clear();
+    clear();stopAutoScroll();
     if(ghost){ghost.remove();ghost=null}
     if(placeholder){placeholder.remove();placeholder=null}
     el.classList.remove('dragging');
@@ -1320,7 +1338,7 @@ function addTouchDrag(el,box,id){
   };
   const begin=(x,y)=>{
     if(active)return;
-    active=true;dragging=true;startIndex=[...box.querySelectorAll('.rankrow')].indexOf(el);
+    active=true;dragging=true;lastX=x;lastY=y;startIndex=[...box.querySelectorAll('.rankrow')].indexOf(el);
     const er=el.getBoundingClientRect();grabOffsetX=x-er.left;grabOffsetY=y-er.top;
     el.classList.add('dragging');
     placeholder=document.createElement('div');placeholder.className='rankrow drag-placeholder';placeholder.setAttribute('aria-hidden','true');
@@ -1333,9 +1351,11 @@ function addTouchDrag(el,box,id){
   };
   const move=(x,y,ev)=>{
     if(!dragging)return;
+    lastX=x;lastY=y;
     if(ev)ev.preventDefault();
     updateGhost(x,y);
     placePlaceholder(x,y);
+    if(!scrollRaf)scrollRaf=requestAnimationFrame(autoScroll);
   };
   const finish=commit=>{
     clear();
@@ -1411,6 +1431,7 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{
   b.classList.add("active");document.getElementById(b.dataset.page).classList.add("active");
   document.getElementById("topsearch").blur();document.getElementById("mysearch").blur();exitMobileSearch();
   renderTop();renderMine();
+  if(b.dataset.page==="friends")loadFriendsDirectory();
 });
 document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll("#topseg button").forEach(x=>x.classList.remove("active"));
@@ -1735,6 +1756,62 @@ document.getElementById("save").onclick=async()=>{
   }catch(e){console.warn("Add course failed",e);toast("Could not save the course/round. Try again")}
 };
 
+
+let friendsCache=[];
+let selectedFriendId="";
+async function loadFriendsDirectory(){
+  const sel=document.getElementById("friendSelect"),list=document.getElementById("friendsList");
+  if(!sel||!list)return;
+  if(!currentUser||!supabaseClient){sel.innerHTML='<option value="">Sign in to see friends…</option>';list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';return}
+  sel.disabled=true;list.innerHTML='<div class="friends-loading">Loading friends…</div>';
+  try{
+    const {data,error}=await supabaseClient.from("profiles").select("id,email,display_name").order("email",{ascending:true});
+    if(error)throw error;
+    friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
+    sel.innerHTML='<option value="">Select a friend…</option>';
+    friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.email||f.display_name||"Member";sel.appendChild(o)});
+    if(!friendsCache.length){list.innerHTML='<div class="friends-empty">No other registered members yet.</div>';return}
+    list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
+  }catch(e){
+    console.warn("Friends directory load failed",e);
+    sel.innerHTML='<option value="">Friends unavailable</option>';
+    list.innerHTML='<div class="friends-empty">The Friends directory is not available yet. Supabase needs a read policy for the profiles and user_courses tables.</div>';
+  }finally{sel.disabled=false}
+}
+async function loadFriendList(friendId){
+  const list=document.getElementById("friendsList"),label=document.getElementById("friendsLabel");
+  if(!friendId){list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';label.textContent="Personal ranking";return}
+  const friend=friendsCache.find(x=>String(x.id)===String(friendId));
+  if(!friend)return;
+  list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
+  label.textContent=`${friend.email||friend.display_name||"Friend"} · Personal ranking`;
+  try{
+    const {data:rows,error}=await supabaseClient.from("user_courses").select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true});
+    if(error)throw error;
+    const ids=[...(rows||[])].map(r=>r.course_id).filter(Boolean);
+    let catalog=new Map();
+    if(ids.length){
+      const {data:cr,error:ce}=await supabaseClient.from("courses").select("id,name,city,state,country,logo_url,website_url").in("id",ids);
+      if(ce)throw ce;
+      (cr||[]).forEach(c=>catalog.set(String(c.id),c));
+    }
+    list.innerHTML="";
+    if(!rows?.length){list.innerHTML='<div class="friends-empty">This friend has not ranked any courses yet.</div>';return}
+    rows.forEach((r,i)=>{
+      const c=catalog.get(String(r.course_id));
+      if(!c)return;
+      const location=[c.city,c.state,c.country].filter(Boolean).join(", ");
+      const el=document.createElement("div");el.className="rankrow friend-row";
+      el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${Number.isFinite(Number(r.personal_rank))?r.personal_rank:i+1}</div><div class="logo">${c.logo_url?`<img src="${c.logo_url}">`:initials(c.name)}</div><div><div class="course">${c.name}</div><div class="loc">${location}</div></div><div class="count"><strong>${Number(r.times_played)||0}×</strong><span> played</span></div>`;
+      list.appendChild(el);
+    });
+    if(!list.children.length)list.innerHTML='<div class="friends-empty">Their ranked courses are not available.</div>';
+  }catch(e){
+    console.warn("Friend list load failed",e);
+    list.innerHTML='<div class="friends-empty">Could not load this friend’s list. Check the Supabase read policies and try again.</div>';
+  }
+}
+document.getElementById("friendSelect")?.addEventListener("change",e=>{selectedFriendId=e.target.value;loadFriendList(selectedFriendId)});
 </script>
 
 <script>
@@ -1775,11 +1852,12 @@ if(supabaseClient){
     cloudHydratedUserId=currentUser.id;
     try{
       await supabaseClient.from("profiles").upsert(
-        {id:currentUser.id,display_name:(currentUser.email||"").split("@")[0]},
+        {id:currentUser.id,email:currentUser.email||"",display_name:(currentUser.email||"").split("@")[0]},
         {onConflict:"id"}
       );
       await migrateAndLoadCloud();
       renderTop();renderMine();
+      if(document.getElementById("friends")?.classList.contains("active"))loadFriendsDirectory();
     }catch(e){
       console.warn("Cloud account load failed",e);
       // A previous account's async request can finish after the user has
