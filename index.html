@@ -627,7 +627,7 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T13:09:33-04:00";
+const APP_BUILD_UPDATED_AT="2026-09-15T16:00:00-04:00";
 const APP_VERSION="v108";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
@@ -1186,22 +1186,112 @@ async function queuePublicRankingMetadata(items){
     }
   }
 }
+/* Supabase is the source of truth for published rankings. The bundled fields
+   remain only as a temporary fallback for the state-ranking migration. */
+let cloudRankings=[];
+let cloudRankingsLoaded=false;
+let cloudRankingsLoading=null;
+
+function rankingCourseFromCloud(db){
+  if(!db||!db.id||!db.name)return null;
+
+  // Reuse an existing Course Book identity whenever the canonical catalog
+  // already knows this exact course. This prevents ranking data from creating
+  // duplicate courses for a user's existing list/round history.
+  const mapped=staticCourseForCloudRecord(db);
+  if(mapped){
+    rememberCloudCatalogId(mapped.id,db.id);
+    cloudCourseMap.set(String(mapped.id),String(db.id));
+    return mapped;
+  }
+
+  const id=`cloud-${db.id}`;
+  const location=[db.city,db.state,db.country].filter(Boolean).join(", ") || "Location not specified";
+  const existing=courses.find(c=>String(c.id)===id);
+  if(existing)return existing;
+  return mergeCourse({
+    id,
+    name:String(db.name),
+    location,
+    city:db.city||"",
+    state:db.state||"",
+    country:db.country||"",
+    region:db.country==="USA"?"usa":"world",
+    world:null,usa:null,michigan:null,public:null,
+    logo:db.logo_url||"",website:db.website_url||""
+  });
+}
+
+async function loadCloudRankings(){
+  if(cloudRankingsLoading)return cloudRankingsLoading;
+  if(!supabaseClient){cloudRankingsLoaded=true;return false;}
+  cloudRankingsLoading=(async()=>{
+    try{
+      const {data:rankingRows,error:rankingErr}=await supabaseClient
+        .from("course_rankings")
+        .select("course_id,ranking_type,rank,source,source_year,scope_code,source_url")
+        .in("ranking_type",["world","usa","usa_public"])
+        .order("ranking_type",{ascending:true})
+        .order("rank",{ascending:true});
+      if(rankingErr)throw rankingErr;
+
+      const dbIds=[...new Set((rankingRows||[]).map(r=>r.course_id).filter(Boolean))];
+      const dbById=new Map();
+      if(dbIds.length){
+        const {data:courseRows,error:courseErr}=await supabaseClient
+          .from("courses")
+          .select("id,name,city,state,country,logo_url,website_url")
+          .in("id",dbIds);
+        if(courseErr)throw courseErr;
+        (courseRows||[]).forEach(c=>dbById.set(String(c.id),c));
+      }
+
+      cloudRankings=(rankingRows||[]).map(r=>{
+        const db=dbById.get(String(r.course_id));
+        const course=rankingCourseFromCloud(db);
+        return course?{...r,course}:null;
+      }).filter(Boolean);
+      cloudRankingsLoaded=true;
+      return true;
+    }catch(e){
+      console.warn("Supabase ranking load failed; using bundled fallback",e);
+      cloudRankings=[];
+      cloudRankingsLoaded=true;
+      return false;
+    }finally{
+      cloudRankingsLoading=null;
+    }
+  })();
+  return cloudRankingsLoading;
+}
+
 function renderTop(){
  syncTopFilterUI();
  let q=document.getElementById("topsearch").value.toLowerCase();
- const rankKey=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":"michigan";
- let arr=courses.filter(c=>c[rankKey])
- .filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q))
- .sort((a,b)=>(a[rankKey]||999)-(b[rankKey]||999))
- .slice(0,100);
+ const rankingType=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"usa_public":null;
+ let arr;
+ if(rankingType && cloudRankingsLoaded){
+   arr=cloudRankings
+     .filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
+     .map(r=>({...r.course, _rankingRank:Number(r.rank)}))
+     .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
+     .sort((a,b)=>a._rankingRank-b._rankingRank);
+ }else{
+   const rankKey=filter==="world"?"world":filter==="usa"?"usa":filter==="public"?"public":"michigan";
+   arr=courses.filter(c=>c[rankKey])
+     .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
+     .sort((a,b)=>(a[rankKey]||999)-(b[rankKey]||999))
+     .slice(0,100)
+     .map(c=>({...c,_rankingRank:Number(c[rankKey])}));
+ }
  if(showTopMine)arr=arr.filter(c=>count(c.id)>0);
  let box=document.getElementById("toplist");box.innerHTML="";
  arr.forEach(c=>{
-   let r=c[rankKey],p=count(c.id),onList=state.myList.includes(c.id);
+   let r=c._rankingRank,p=count(c.id),onList=state.myList.includes(c.id);
    let el=document.createElement("div");
    el.className="row top-course-row"+(p?" played-row":"");
    el.dataset.courseId=String(c.id);
-   el.innerHTML=`<div class="rank">#${r}</div><div><div class="course">${c.name}</div><div class="loc">${c.location}</div></div><div><button class="top-list-action" type="button" ${onList?"disabled":""}>${onList?"On my list":"Add to my list"}</button></div>`;
+   el.innerHTML=`<div class="rank">#${r}</div><div><div class="course">${c.name}</div><div class="loc">${c.location||""}</div></div><div><button class="top-list-action" type="button" ${onList?"disabled":""}>${onList?"On my list":"Add to my list"}</button></div>`;
    const btn=el.querySelector(".top-list-action");
    if(!onList)btn.onclick=()=>addTopCourseToMyList(c.id,btn);
    box.appendChild(el);
@@ -1213,11 +1303,13 @@ function renderTop(){
    mineToggle.classList.toggle("active",showTopMine);
    mineToggle.setAttribute("aria-pressed",String(showTopMine));
  }
- let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
+ const top=rankingType && cloudRankingsLoaded
+   ? cloudRankings.filter(r=>r.ranking_type===rankingType && Number(r.rank)>0 && Number(r.rank)<=100)
+   : arr;
+ const played=top.filter(r=>count(r.course?r.course.id:r.id)).length;
  document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":"Michigan - All")+" Top 100";
  const total=100;
  document.getElementById("num").textContent=played+" / "+total;
- document.getElementById("fill").style.width=played+"%";
  document.getElementById("totalLabel").textContent="/ "+total+" played";
  document.getElementById("fill").style.width=Math.min(100,(played/total)*100)+"%";
  document.getElementById("remain").textContent=(total-played)+" remaining";
@@ -2346,6 +2438,7 @@ updateRefreshedDate();
 renderTop();
 renderMine();
 (async function(){
+  await loadCloudRankings();
   renderTop();
   renderMine();
 })();
