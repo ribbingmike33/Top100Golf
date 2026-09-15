@@ -627,8 +627,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T16:00:00-04:00";
-const APP_VERSION="v108";
+const APP_BUILD_UPDATED_AT="2026-09-15T16:45:00-04:00";
+const APP_VERSION="v113";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -2285,11 +2285,13 @@ async function loadFriendList(friendId){
     (myRows||[]).forEach(r=>{if(r?.course_id)myCourseIds.add(String(r.course_id))});
     const myCloudIds=[...(myRows||[])].map(r=>r?.course_id).filter(Boolean);
     let myCourseRecords=[];
+    let myCourses=[];
     if(myCloudIds.length){
-      const {data:myCourses,error:myCoursesError}=await supabaseClient.from("courses")
+      const {data:myCourseRows,error:myCoursesError}=await supabaseClient.from("courses")
         .select("id,name,city,state,country,logo_url,website_url").in("id",myCloudIds);
       if(myCoursesError)throw myCoursesError;
-      myCourseRecords=(myCourses||[]).map(mc=>({...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}));
+      myCourses=myCourseRows||[];
+      myCourseRecords=myCourses.map(mc=>({...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}));
     }
     // Resolve every friend course through the same canonical Course Book
     // identity resolver used by My List and round logging. The raw Supabase
