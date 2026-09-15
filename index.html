@@ -22,7 +22,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .card{background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:17px;padding:24px;box-shadow:0 20px 55px rgba(0,0,0,.18)}.statlabel{text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-size:11px}.stat{display:flex;align-items:baseline;gap:7px;margin:15px 0}.stat strong{font:600 56px 'Playfair Display'}.stat span{color:var(--muted)}.bar{height:7px;background:rgba(255,255,255,.08);border-radius:20px;overflow:hidden}.fill{height:100%;width:0;background:var(--gold);transition:.3s}.statfoot{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:12px}
 .controls{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:34px 0 16px}.seg{display:flex;padding:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:9px}.seg button{border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:6px;font-size:13px;font-weight:700}.seg button.active{background:var(--cream);color:var(--bg)}.search{position:relative;width:290px}.search input{width:100%;height:43px;padding:0 13px 0 38px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;color:var(--cream);outline:0}.search input:focus{border-color:rgba(199,170,107,.5)}.search span{position:absolute;left:13px;top:10px;color:var(--muted)}
 .label{text-transform:uppercase;letter-spacing:1.7px;color:var(--muted);font-size:11px;margin:24px 0 10px}.list{display:flex;flex-direction:column;gap:7px}
-.row{display:grid;grid-template-columns:54px 48px 1fr 150px 100px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
+.row{display:grid;grid-template-columns:54px 48px minmax(0,1fr) 150px;align-items:center;gap:14px;min-height:78px;padding:11px 15px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px}.row:hover{background:rgba(255,255,255,.06);border-color:rgba(199,170,107,.2)}.rank{font:600 19px 'Playfair Display';color:var(--gold);text-align:center}.logo{width:43px;height:43px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#1d4731,#0b2116);border:1px solid rgba(199,170,107,.35);color:var(--gold);font:600 12px 'Playfair Display';overflow:hidden}.logo img{width:100%;height:100%;object-fit:contain;padding:6px}.course{font:600 17px 'Playfair Display'}.loc{font-size:12px;color:var(--muted);margin-top:3px}.meta{font-size:12px;color:var(--muted)}.played{color:var(--cream)}.check{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(199,170,107,.12);color:var(--gold);margin-right:6px}.gold{color:var(--gold-light,var(--gold));font-weight:700}
 .listhead{display:flex;align-items:end;justify-content:space-between;margin-bottom:23px}.listhead h2{font:600 37px 'Playfair Display';margin:0 0 5px}.listhead p{margin:0;color:var(--muted);font-size:13px}.primary{border:0;background:var(--gold);color:#08160f;padding:12px 17px;border-radius:8px;font-weight:800}.primary:hover{filter:brightness(1.08)}
 .rankrow{touch-action:pan-y;user-select:none;-webkit-user-select:none;display:grid;grid-template-columns:27px 32px 46px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055);border-radius:11px;cursor:grab;position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease}.rankrow.dragging{opacity:0!important;z-index:1;transform:none!important}.rankrow.drag-placeholder{display:grid;visibility:visible!important;min-height:73px;padding:10px 13px;border:2px dashed rgba(199,170,107,.65);border-radius:11px;background:rgba(199,170,107,.05);box-shadow:inset 0 0 0 1px rgba(199,170,107,.12);pointer-events:none}.drag-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none!important;display:grid;grid-template-columns:27px 32px 46px minmax(0,1fr) 90px;align-items:center;gap:12px;min-height:73px;padding:10px 13px;border-radius:11px;background:#f4ecd8!important;border:2px solid #f4ecd8!important;color:#10281c!important;box-shadow:0 30px 70px rgba(0,0,0,.62),0 12px 24px rgba(0,0,0,.42);transform:scale(1.045);transform-origin:center center;will-change:transform,left,top}.drag-ghost *{color:#10281c!important}.drag-ghost .logo{border-color:#10281c!important;color:#10281c!important;background:rgba(16,40,28,.08)!important}.course-dragging{touch-action:none!important}.friend-picker-wrap{display:flex;align-items:center;gap:10px}.friend-picker-wrap label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1.4px}.friend-picker-wrap select{min-width:280px;height:43px;padding:0 36px 0 13px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.045);color:var(--cream);font-size:13px;outline:0}.friend-picker-wrap select:focus{border-color:rgba(199,170,107,.5)}.friend-row{cursor:default!important}.friend-row .handle{visibility:hidden}.friends-empty{padding:30px 20px;border:1px dashed rgba(255,255,255,.12);border-radius:12px;color:var(--muted);text-align:center}.friends-loading{padding:25px 10px;color:var(--muted);text-align:center}.course-dragging .rankrow{touch-action:none!important}.rankrow.over{border-color:var(--gold);background:rgba(199,170,107,.10);box-shadow:inset 0 0 0 2px rgba(199,170,107,.30)}.handle{color:#617067;touch-action:none;cursor:grab;min-width:32px;min-height:40px;display:grid;place-items:center;user-select:none;-webkit-user-select:none;font-size:18px;letter-spacing:-3px}.myrank{font:600 18px 'Playfair Display';color:var(--gold)}.count{text-align:right;color:var(--muted);font-size:11px}.count strong{color:var(--cream);font-size:13px}.roundslink{display:inline-flex;align-items:center;gap:3px;border:0;background:none;color:var(--cream);padding:0;margin:0;font:inherit;cursor:pointer;text-align:right}.roundslink strong{color:var(--cream);font-size:13px}.roundslink span{color:var(--muted);font-size:11px}.roundhistory-list{max-height:52vh;overflow:auto;margin:0 -2px 12px}.roundhistory-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}.roundhistory-row:last-child{border-bottom:0}.roundhistory-date{font-size:13px;color:var(--cream)}.roundhistory-date small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.delete-round{border:1px solid rgba(180,90,90,.45);background:rgba(180,90,90,.08);color:#f0caca;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;white-space:nowrap}.deleteround-inline{border:0;background:none;color:#d9a7a7;padding:0 0 0 8px;margin:0;font-size:11px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.roundhistory-empty{text-align:center;color:var(--muted);padding:20px 0}
 .rankactions{display:flex;gap:7px;margin-top:10px}.rankaction{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--cream);padding:9px 10px;border-radius:8px;font-size:12px;font-weight:700}.rankaction.primary-rank{background:var(--cream);color:var(--bg);border-color:var(--cream)}.rankmoveinput{width:100%;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:9px;color:var(--cream);padding:0 12px;font-size:18px;outline:0}.rankmovehint{font-size:12px;color:var(--muted);margin-top:6px}.rankmodal-course{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.035);margin-bottom:16px}.rankmodal-course strong{display:block;font-family:'Playfair Display';font-size:20px;color:var(--cream)}.rankmodal-course span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.course-option-section{margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.08)}.course-option-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}.course-option-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}.course-option-buttons button{margin:0;min-height:42px}@media(max-width:760px){.rankactions{margin-top:8px}.rankaction{padding:10px 7px}}
@@ -63,7 +63,11 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 .authmodal{max-width:430px}.autherror{min-height:18px;color:#c96d63;font-size:12px;margin:-2px 0 10px}
 @media(max-width:760px){.authbar{padding:0 16px;margin-top:8px}.authbar{justify-content:space-between}.authmodal{width:100%;max-width:none;border-radius:20px 20px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom))}}
 .editcount{margin-top:5px;border:0;background:transparent;color:#9a7b3f;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}.count.editing{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.counteditinput{width:54px;height:30px;border:1px solid #c9b78f;border-radius:7px;background:#fff;color:#173c2f;text-align:center;font:700 15px/1 inherit}.counteditactions{display:flex;gap:6px}.counteditactions button{border:0;background:transparent;font:600 11px/1.1 inherit;padding:2px 0;cursor:pointer}.counteditactions .savecount{color:#173c2f}.counteditactions .cancelcount{color:#8a6f45}
-.mine-controls{display:flex;align-items:center;justify-content:flex-start;gap:8px}.mine-controls .search{width:auto;flex:1}.mine-controls .refresh-btn{flex:0 0 auto;white-space:nowrap;min-height:43px;padding:0 14px}.mylist-filter{flex:0 0 auto}.mylist-filter button{min-width:76px}.rankrow.mylist-view-only{cursor:default;touch-action:auto}.rankrow.mylist-view-only .roundslink{cursor:default;pointer-events:none}.rankrow.mylist-view-only .handle{cursor:default}.mylist-filter button{user-select:none;-webkit-user-select:none}
+.mine-controls{display:flex;align-items:center;justify-content:flex-start;gap:8px}.mine-controls .search{width:auto;flex:1}
+.top-controls-right{display:flex;align-items:center;gap:8px;width:100%}.top-controls-right .search{flex:1;width:auto}
+.top-mine-toggle{flex:none;min-height:42px;padding:0 15px;border:1px solid rgba(199,170,107,.45);border-radius:10px;background:rgba(255,255,255,.035);color:var(--cream);font:700 12px inherit;cursor:pointer;white-space:nowrap}
+.top-mine-toggle:hover{border-color:rgba(199,170,107,.8);background:rgba(199,170,107,.08)}
+.top-mine-toggle.active{background:var(--gold);border-color:var(--gold);color:#08160f}.mine-controls .refresh-btn{flex:0 0 auto;white-space:nowrap;min-height:43px;padding:0 14px}.mylist-filter{flex:0 0 auto}.mylist-filter button{min-width:76px}.rankrow.mylist-view-only{cursor:default;touch-action:auto}.rankrow.mylist-view-only .roundslink{cursor:default;pointer-events:none}.rankrow.mylist-view-only .handle{cursor:default}.mylist-filter button{user-select:none;-webkit-user-select:none}
 
 @media(max-width:760px){.mine-controls{flex-direction:column;align-items:stretch}.mine-controls .mylist-filter{width:100%;display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}.mine-controls .mylist-filter button{min-width:0;padding:0 8px}.mine-controls .search{width:100%;flex:1}.mine-controls .refresh-btn{flex:0 0 auto}}
 
@@ -95,9 +99,14 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 @media(max-width:760px){
   .seg{width:100%;margin:0;padding:2px 2px 3px;gap:4px}
   .seg button{padding:10px 15px;font-size:12px}
+  .top-controls-right{width:100%;display:flex;align-items:stretch;gap:8px}
+  .top-controls-right .search{min-width:0;flex:1}
+  .top-mine-toggle{min-width:92px;padding:0 10px}
   #toplist{display:flex;flex-direction:column;gap:7px;width:100%}
   #toplist .top-course-row{grid-template-columns:34px 42px minmax(0,1fr) 112px;gap:9px;min-height:64px;padding:9px 10px}
-  #toplist .top-list-action{min-height:38px;padding:7px 7px;font-size:11px}
+  #toplist .top-course-row>div{min-width:0}
+  #toplist .top-course-row .course{min-width:0;overflow-wrap:anywhere}
+  #toplist .top-list-action{min-height:38px;width:100%;padding:7px 7px;font-size:11px}
 }
 
 </style>
@@ -203,9 +212,9 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <section id="top" class="page">
 <div class="hero">
 <div class="copy"><div class="eyebrow">The great courses</div><h1>Your Top 100 journey.</h1><p>Track the world's, America's and Michigan's greatest golf courses. See how many you've played and keep building your golf resume.</p></div>
-<div class="card"><div class="statlabel">World Top 100</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
+<div class="card"><div class="statlabel">Michigan - All Top 100</div><div class="stat"><strong id="num">0</strong><span id="totalLabel">/ 100 played</span></div><div class="bar"><div class="fill" id="fill"></div></div><div class="statfoot"><span id="remain">100 remaining</span><span>Keep playing.</span></div></div>
 </div>
-<div class="controls"><div class="seg" id="topseg"><button data-f="michigan">Michigan - All</button><button data-f="michiganPublic">Michigan - Public</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button class="active" data-f="world">World</button></div><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div>
+<div class="controls"><div class="seg" id="topseg"><button class="active" data-f="michigan">Michigan - All</button><button data-f="michiganPublic">Michigan - Public</button><button data-f="usa">USA - All</button><button data-f="public">USA - Public</button><button data-f="world">World</button></div><div class="top-controls-right"><button id="topMineToggle" class="top-mine-toggle" type="button" aria-pressed="false">Show mine</button><div class="search"><span>⌕</span><input id="topsearch" placeholder="Search courses..."></div></div></div>
 <div class="label">Top courses</div><div class="list" id="toplist"></div>
 </section>
 
@@ -733,7 +742,7 @@ function activateUserState(userId){
     if(!courses.some(x=>String(x.id)===String(c.id)))courses.push({...c});
   }
 }
-let filter="world",dragged=null,touchDrag=null;
+let filter="michigan",dragged=null,touchDrag=null,showTopMine=false;
 // Runtime API -> Course Book mapping cache. The ranked course IDs are the
 // permanent identifiers inside this app; API IDs are only aliases for the
 // course the user selected. The mapping is rebuilt deterministically from the
@@ -753,8 +762,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-14T22:37:00-04:00";
-const APP_VERSION="v83";
+const APP_BUILD_UPDATED_AT="2026-09-14T12:00:00-04:00";
+const APP_VERSION="v85";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1184,6 +1193,7 @@ function renderTop(){
  .filter(c=>c.name.toLowerCase().includes(q)||c.location.toLowerCase().includes(q))
  .sort((a,b)=>(a[rankKey]||999)-(b[rankKey]||999))
  .slice(0,100);
+ if(showTopMine)arr=arr.filter(c=>count(c.id)>0);
  let box=document.getElementById("toplist");box.innerHTML="";
  arr.forEach(c=>{
    let r=c[rankKey],p=count(c.id),onList=state.myList.includes(c.id);
@@ -1194,6 +1204,12 @@ function renderTop(){
    if(!onList)btn.onclick=()=>addTopCourseToMyList(c.id,btn);
    box.appendChild(el);
  });
+ const mineToggle=document.getElementById("topMineToggle");
+ if(mineToggle){
+   mineToggle.textContent=showTopMine?"Show all":"Show mine";
+   mineToggle.classList.toggle("active",showTopMine);
+   mineToggle.setAttribute("aria-pressed",String(showTopMine));
+ }
  let top=courses.filter(c=>c[rankKey]&&c[rankKey]<=100),played=top.filter(c=>count(c.id)).length;
  document.querySelector(".statlabel").textContent=(filter==="world"?"World":filter==="usa"?"USA - All":filter==="public"?"USA - Public":filter==="michiganPublic"?"Michigan - Public":"Michigan - All")+" Top 100";
  const total=100;
@@ -1546,6 +1562,13 @@ document.querySelectorAll("#topseg button").forEach(b=>b.onclick=()=>{
   syncTopFilterUI();
   const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();renderTop();
 });
+document.getElementById("topMineToggle").onclick=()=>{
+  showTopMine=!showTopMine;
+  document.getElementById("topsearch").value="";
+  document.getElementById("topsearch").blur();
+  exitMobileSearch();
+  renderTop();
+};
 function enterMobileSearch(input){
   if(window.matchMedia("(max-width:760px)").matches){
     document.body.classList.add("mobile-searching");
