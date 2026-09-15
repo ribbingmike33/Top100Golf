@@ -626,7 +626,7 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T11:27:12-04:00";
+const APP_BUILD_UPDATED_AT="2026-09-15T11:39:12-04:00";
 const APP_VERSION="v102";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
@@ -2024,6 +2024,30 @@ async function addFriendCourseToMyList(dbid,button){
       return;
     }
 
+    // Some older accounts contain the same real-world course under a different
+    // Supabase course UUID. IDs alone are therefore not sufficient to determine
+    // Friends-button membership. Resolve the user's existing course metadata and
+    // apply the same conservative identity rules used by course search: exact
+    // normalized course name plus compatible location data.
+    const {data:myMemberships,error:myMembershipError}=await supabaseClient.from("user_courses")
+      .select("course_id").eq("user_id",currentUser.id);
+    if(myMembershipError)throw myMembershipError;
+    const myIds=[...(myMemberships||[])].map(r=>r.course_id).filter(Boolean);
+    if(myIds.length){
+      const {data:myCourses,error:myCoursesError}=await supabaseClient.from("courses")
+        .select("id,name,city,state,country,logo_url,website_url").in("id",myIds);
+      if(myCoursesError)throw myCoursesError;
+      const friendCourse=get(dbid) || courses.find(x=>String(x.id)===String(dbid)) || null;
+      const equivalent=friendCourse && (myCourses||[]).some(mc=>searchCoursesEquivalent(
+        friendCourse,
+        {...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}
+      ));
+      if(equivalent){
+        if(button){button.textContent="On my list";button.disabled=true}
+        return;
+      }
+    }
+
     // Course Book invariant: every course on a user's My List has at least
     // one authenticated round. Adding a course from a friend's list therefore
     // creates the first round as well as the personal-list membership.
@@ -2085,13 +2109,29 @@ async function loadFriendList(friendId){
     if(myError)throw myError;
     (myRows||[]).forEach(r=>{if(r?.course_id)myCourseIds.add(String(r.course_id))});
 
+    // Also load metadata for the user's memberships. Older Course Book data can
+    // contain duplicate Supabase course IDs for the same real-world course, so
+    // an ID-only check can incorrectly show "Add to my list" for Ike/Jon-style
+    // accounts while working for accounts whose IDs happen to match.
+    const myCloudIds=[...(myRows||[])].map(r=>r?.course_id).filter(Boolean);
+    let myCourseRecords=[];
+    if(myCloudIds.length){
+      const {data:myCourses,error:myCoursesError}=await supabaseClient.from("courses")
+        .select("id,name,city,state,country,logo_url,website_url").in("id",myCloudIds);
+      if(myCoursesError)throw myCoursesError;
+      myCourseRecords=(myCourses||[]).map(mc=>({...mc,location:[mc.city,mc.state,mc.country].filter(Boolean).join(", ")}));
+    }
+
     list.innerHTML="";
     if(!rows?.length){list.innerHTML='<div class="friends-empty">This friend has not ranked any courses yet.</div>';return}
     rows.forEach((r,i)=>{
       const c=catalog.get(String(r.course_id));
       if(!c)return;
       const location=[c.city,c.state,c.country].filter(Boolean).join(", ");
-      const onMyList=myCourseIds.has(String(c.id));
+      const onMyList=myCourseIds.has(String(c.id)) || myCourseRecords.some(mc=>searchCoursesEquivalent(
+        {...c,location},
+        mc
+      ));
       const el=document.createElement("div");el.className="rankrow friend-row";
       el.dataset.courseId=String(c.id);
       el.innerHTML=`<div class="handle">⋮⋮</div><div class="myrank">${Number.isFinite(Number(r.personal_rank))?r.personal_rank:i+1}</div><div><div class="course">${c.name}</div><div class="loc">${location}</div></div><div><button class="friend-list-action" type="button" ${onMyList?"disabled":""}>${onMyList?"On my list":"Add to my list"}</button></div>`;
