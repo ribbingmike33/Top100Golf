@@ -80,14 +80,21 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 @media(max-width:760px){
   .seg{width:100%;margin:0;padding:2px 2px 3px;gap:4px}
   .seg button{padding:10px 15px;font-size:12px}
-  #toplist{display:flex;flex-direction:column;gap:7px}
-  #toplist .row{grid-template-columns:34px 42px minmax(0,1fr) 92px;gap:8px;min-height:72px;height:72px;padding:9px 10px;width:100%;box-sizing:border-box}
+  #toplist{display:flex;flex-direction:column;gap:9px}
+  /* Every Top 100 card is full-width and uses the available middle column.
+     Names wrap naturally instead of being clipped or ellipsized. */
+  #toplist .row{grid-template-columns:34px 48px minmax(0,1fr) 118px;gap:10px;min-height:96px;height:auto;padding:11px 12px;width:100%;box-sizing:border-box;align-items:center}
+  #toplist .row .course{font-size:20px;line-height:1.16;display:block;overflow:visible;white-space:normal;overflow-wrap:normal;word-break:normal}
+  #toplist .row .loc{font-size:13px;line-height:1.2;margin-top:5px;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+  #toplist .row .logo{width:46px;height:46px}
+  #toplist .row .rank{font-size:18px}
+  #toplist .row .gold{min-width:0}
+  #toplist .top-add{width:118px;min-height:42px;padding:8px 8px;font-size:11px;line-height:1.15;white-space:normal}
 }
 
-
-#toplist .row .course{font-size:17px;line-height:1.22;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#toplist .row .course{font-size:19px;line-height:1.2}
 #toplist .row>div{min-width:0}
-#toplist .row .loc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toplist .row .loc{overflow-wrap:anywhere}
 </style>
 
 <style>
