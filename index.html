@@ -1235,22 +1235,28 @@ async function loadCloudRankings(){
         .order("rank",{ascending:true});
       if(rankingErr)throw rankingErr;
 
-      const dbIds=[...new Set((rankingRows||[]).map(r=>r.course_id).filter(Boolean))];
+      // Fetch ranked courses in small batches. A single giant .in() request can
+      // exceed URL/request limits and make an otherwise valid 100-course ranking
+      // silently fall back to the bundled list.
+      const dbIds=[...new Set((rankingRows||[]).map(r=>String(r.course_id)).filter(Boolean))];
       const dbById=new Map();
-      if(dbIds.length){
+      for(let i=0;i<dbIds.length;i+=50){
+        const batch=dbIds.slice(i,i+50);
         const {data:courseRows,error:courseErr}=await supabaseClient
           .from("courses")
           .select("id,name,city,state,country,logo_url,website_url")
-          .in("id",dbIds);
+          .in("id",batch);
         if(courseErr)throw courseErr;
         (courseRows||[]).forEach(c=>dbById.set(String(c.id),c));
       }
 
       cloudRankings=(rankingRows||[]).map(r=>{
         const db=dbById.get(String(r.course_id));
+        if(!db)return null;
         const course=rankingCourseFromCloud(db);
         return course?{...r,course}:null;
       }).filter(Boolean);
+
       cloudRankingsLoaded=true;
       return true;
     }catch(e){
@@ -1318,6 +1324,12 @@ let rankEditingId=null;
 function openRankModal(id){
  const c=get(id); if(!c)return;
  rankEditingId=id;
+ // Reset the delete control every time the modal opens. A successful delete
+ // disables the button while the async operation runs; without resetting it,
+ // deleting a course and then adding that same course back leaves the control
+ // permanently stuck on "Deleting…".
+ const deleteBtn=document.getElementById('deleteCourse');
+ if(deleteBtn){deleteBtn.disabled=false;deleteBtn.textContent='Delete Course'}
  document.getElementById('rankCourseName').textContent=c.name;
  document.getElementById('rankCourseLoc').textContent=c.location||'';
  document.getElementById('rankChoose').style.display='block';
