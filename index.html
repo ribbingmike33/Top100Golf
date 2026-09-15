@@ -72,6 +72,13 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 @media(max-width:760px){.mine-controls{flex-direction:column;align-items:stretch}.mine-controls .mylist-filter{width:100%;display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}.mine-controls .mylist-filter button{min-width:0;padding:0 8px}.mine-controls .search{width:100%;flex:1}.mine-controls .refresh-btn{flex:0 0 auto}}
 
 .app-footer{max-width:1120px;margin:28px auto 0;padding:18px 20px calc(30px + env(safe-area-inset-bottom));text-align:center;color:rgba(233,225,204,.58);font-size:12px;letter-spacing:.04em}.app-footer span{display:block}.app-refresh{display:block;width:100%;max-width:420px;margin:0 auto 12px;min-height:48px;border:1px solid rgba(199,170,107,.55);border-radius:12px;background:rgba(199,170,107,.10);color:var(--gold);font:700 14px/1 inherit;letter-spacing:.02em;cursor:pointer;-webkit-tap-highlight-color:transparent}.app-refresh:active{transform:scale(.985);background:rgba(199,170,107,.18)}
+.app-refresh:disabled{opacity:.72;cursor:wait;transform:none}
+.app-refresh-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(8,22,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.app-refresh-overlay.open{display:flex}
+.app-refresh-panel{display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 30px;border:1px solid rgba(199,170,107,.34);border-radius:18px;background:rgba(16,40,28,.94);box-shadow:0 24px 70px rgba(0,0,0,.42)}
+.app-refresh-spinner{width:34px;height:34px;border:3px solid rgba(233,225,204,.22);border-top-color:var(--gold);border-radius:50%;animation:appRefreshSpin .8s linear infinite}
+.app-refresh-label{color:var(--cream);font-size:14px;font-weight:700;letter-spacing:.02em}
+@keyframes appRefreshSpin{to{transform:rotate(360deg)}}
 
 /* Top 100 display: original full-width ranked course rows.
    Ranking selector stays on one clean horizontal rail on mobile. */
@@ -268,6 +275,12 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 </div></div>
 <div class="toast" id="toast"></div>
 <footer class="app-footer"><button class="app-refresh" id="refreshApp" type="button">Refresh App</button><span id="refreshedDate">Last updated —</span></footer>
+<div class="app-refresh-overlay" id="appRefreshOverlay" aria-hidden="true">
+  <div class="app-refresh-panel" role="status" aria-live="polite">
+    <div class="app-refresh-spinner" aria-hidden="true"></div>
+    <div class="app-refresh-label">Refreshing Course Book…</div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -613,9 +626,20 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T08:33:10-04:00";
-const APP_VERSION="v98";
-document.getElementById("refreshApp").onclick=()=>window.location.reload();
+const APP_BUILD_UPDATED_AT="2026-09-15T08:37:54-04:00";
+const APP_VERSION="v99";
+document.getElementById("refreshApp").onclick=()=>{
+  const button=document.getElementById("refreshApp"),overlay=document.getElementById("appRefreshOverlay");
+  if(button.disabled)return;
+  button.disabled=true;
+  button.textContent="Refreshing…";
+  overlay?.classList.add("open");
+  overlay?.setAttribute("aria-hidden","false");
+  // Give the browser one paint so iPhone Safari visibly renders the loading
+  // state before navigation begins. A tiny delay prevents the old screen from
+  // appearing to glitch while still making refresh effectively immediate.
+  requestAnimationFrame(()=>setTimeout(()=>window.location.reload(),220));
+};
 
 function updateRefreshedDate(){
   const el=document.getElementById("refreshedDate");
@@ -1473,17 +1497,23 @@ let apiSearchSession=0;
 async function fetchOpenGolf(url){
   let lastError=null;
   for(let attempt=0;attempt<2;attempt++){
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),8000);
     try{
-      const res=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json","X-Course-Book-Session":String(apiSearchSession)}});
+      // Keep this request CORS-simple. A custom X-* header would trigger a
+      // browser preflight, and OpenGolfAPI is a public keyless read API that
+      // does not need one. The _cb query parameter already defeats stale cache.
+      const res=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json"},signal:controller.signal});
       if(res.ok)return res;
       lastError=new Error(`OpenGolfAPI ${res.status}`);
-      if(![499,502,503,504].includes(res.status))throw lastError;
-      await new Promise(r=>setTimeout(r,250*(attempt+1)));
+      if(![408,429,499,502,503,504].includes(res.status))throw lastError;
     }catch(e){
-      lastError=e;
-      if(attempt===1)throw e;
-      await new Promise(r=>setTimeout(r,250*(attempt+1)));
+      lastError=e?.name==="AbortError"?new Error("OpenGolfAPI request timed out"):e;
+      if(attempt===1)throw lastError;
+    }finally{
+      clearTimeout(timeout);
     }
+    await new Promise(r=>setTimeout(r,250*(attempt+1)));
   }
   throw lastError||new Error("OpenGolfAPI request failed");
 }
@@ -1493,7 +1523,6 @@ function resetLogSearchConnection(){
   // Every Log a Round session gets a fresh request token. Search uses live
   // global and state-filtered OpenGolfAPI calls; there is no Michigan directory cache.
   apiSearchSession=Date.now();
-  miDirectoryPromise=null;
 }
 async function verifyLogCloudConnection(){
   if(!supabaseClient||!currentUser)throw new Error("Not signed in");
@@ -1526,7 +1555,6 @@ document.getElementById("close").onclick=()=>modal.classList.remove("open");
 document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;document.getElementById("modalTitle").textContent="Log a Round";document.getElementById("modalSub").textContent="Search for the course you played.";document.getElementById("quantityBox").style.display="none";document.getElementById("searchActions").style.display="flex";document.querySelector(".logmodal .searchgroup").style.display="block";document.getElementById("results").style.display="flex";document.getElementById("modalsearch").focus()};
 document.getElementById("modalsearch").oninput=()=>{syncVisibleViewport();renderResults()};
 let remoteSearchTimer=null;
-let miDirectoryPromise=null;
 
 function apiCourseToRaw(c){
   const displayName=String(c.name||c.course_name||c.title||"Unnamed Course").trim();
@@ -1560,6 +1588,33 @@ function normalizeApiCourse(c, forceMichigan=false){
   });
 }
 
+function extractOpenGolfCourses(data){
+  if(Array.isArray(data))return data;
+  const candidates=[data?.courses,data?.results,data?.items,data?.data?.courses,data?.data];
+  return candidates.find(Array.isArray)||[];
+}
+function searchTokenize(value){
+  return courseNameNorm(value).split(" ").filter(x=>x.length>1);
+}
+function openGolfSearchScore(raw,q){
+  const name=String(raw?.name||raw?.course_name||raw?.title||"");
+  const location=[raw?.city,raw?.state,raw?.province,raw?.country,raw?.location,raw?.address].filter(Boolean).join(" ");
+  const queryTokens=searchTokenize(q),nameTokens=searchTokenize(name),locTokens=searchTokenize(location);
+  if(!queryTokens.length)return 0;
+  const nameSet=new Set(nameTokens),locSet=new Set(locTokens);
+  const matched=queryTokens.filter(t=>nameSet.has(t));
+  const locMatched=queryTokens.filter(t=>locSet.has(t));
+  let score=matched.length/queryTokens.length;
+  score+=0.35*(matched.length/Math.max(1,nameTokens.length));
+  score+=0.08*(locMatched.length/queryTokens.length);
+  if(courseNameNorm(name)===courseNameNorm(q))score+=2;
+  return score;
+}
+function rankOpenGolfResults(items,q){
+  return (items||[]).map((item,index)=>({item,index,score:openGolfSearchScore(item,q)}))
+    .sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.item);
+}
+
 async function searchOpenGolf(q){
   q=q.trim(); if(q.length<2) return [];
   const results=[];
@@ -1575,18 +1630,18 @@ async function searchOpenGolf(q){
     const res=await fetchOpenGolf(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&limit=50&_cb=${apiSearchSession}`);
     if(!res.ok) throw new Error(`OpenGolfAPI ${res.status}`);
     const data=await res.json();
-    return Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
+    return rankOpenGolfResults(extractOpenGolfCourses(data),q);
   })();
   const michiganPromise=(async()=>{
     const res=await fetchOpenGolf(`${API_BASE}/courses/search?q=${encodeURIComponent(q)}&state=MI&limit=50&_cb=${apiSearchSession}`);
     if(!res.ok) throw new Error(`OpenGolfAPI Michigan search ${res.status}`);
     const data=await res.json();
-    return Array.isArray(data)?data:(data.courses||data.data||data.results||[]);
+    return rankOpenGolfResults(extractOpenGolfCourses(data),q);
   })();
 
   const [generic,mi]=await Promise.allSettled([genericPromise,michiganPromise]);
-  if(generic.status==="fulfilled") generic.value.map(c=>normalizeApiCourse(c)).forEach(add);
-  if(mi.status==="fulfilled") mi.value.map(c=>normalizeApiCourse(c,true)).forEach(add);
+  if(generic.status==="fulfilled") generic.value.forEach(add);
+  if(mi.status==="fulfilled") mi.value.forEach(add);
 
   if(!results.length && generic.status==="rejected" && mi.status==="rejected"){
     console.warn("OpenGolfAPI search failed",generic.reason,mi.reason);
@@ -1683,7 +1738,15 @@ function renderResults(){
       try{remote=await searchOpenGolf(q)}catch(e){console.warn("OpenGolfAPI search failed",e);return}
       if(q!==document.getElementById("modalsearch").value.toLowerCase().trim())return;
 
-      const all=[...local,...remote.map(c=>searchResultCourse(c,false))];
+      // Normalize only after confirming this response belongs to the current
+      // query. This prevents a fast typist from polluting the local Course Book
+      // catalog with stale results from an earlier search.
+      const normalizedRemote=[];
+      remote.forEach(c=>{
+        const normalized=normalizeApiCourse(c, String(c?.state||c?.state_code||c?.province||"").toUpperCase()==="MI");
+        if(normalized)normalizedRemote.push(normalized);
+      });
+      const all=[...local,...normalizedRemote.map(c=>searchResultCourse(c,false))];
       const groups=dedupeSearchCourses(all);
       const unique=[];
       for(const group of groups){
