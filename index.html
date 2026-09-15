@@ -181,7 +181,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   
 </header>
 <div class="authbar" id="authbar"><div><span class="authdot"></span><span id="authLabel">Not signed in</span></div><button class="authbtn" id="authOpen">Sign in</button></div>
-<nav><button class="nav active" data-page="mine">My List</button><button class="nav" data-page="friends">Friends</button><button class="nav" data-page="top">Top 100</button></nav>
+<nav><button class="nav active" data-page="mine">My List</button><button class="nav" data-page="top">Top 100</button><button class="nav" data-page="friends">Friends</button></nav>
 
 <main>
 <section id="top" class="page">
@@ -236,7 +236,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="modal authmodal">
 <div class="modalhead"><div><div class="eyebrow">Your account</div><h3 id="authTitle">Sign in</h3></div><button class="modalclose" id="authClose" aria-label="Close">×</button></div>
 <div class="sub" id="authSub">Sign in to keep your courses, rankings and rounds synced to your account.</div>
-<div class="group"><label>Email</label><input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+<div class="group"><label id="authIdentityLabel">Username</label><input id="authIdentity" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="your username"></div>
 <div class="group"><label>Password</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••"></div>
 <div class="autherror" id="authError"></div>
 <div class="actions"><button class="secondary" id="authToggle">Create account</button><button class="primary" id="authSubmit">Sign in</button></div>
@@ -738,7 +738,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-14T19:25:00-04:00";
-const APP_VERSION="v77";
+const APP_VERSION="v80";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1229,11 +1229,27 @@ async function deleteRound(courseId,roundId,rowEl){
  try{
    const {error}=await supabaseClient.from("rounds").delete().eq("id",roundId).eq("user_id",currentUser.id);
    if(error)throw error;
+   const c=get(courseId);
+   const dbid=c?(cloudCourseMap.get(String(courseId))||await ensureDbCourse(c)):null;
+   let remainingRows=[];
+   if(dbid){
+     const check=await supabaseClient.from("rounds").select("id").eq("user_id",currentUser.id).eq("course_id",dbid);
+     if(check.error)throw check.error;
+     remainingRows=check.data||[];
+     if(remainingRows.length===0){
+       const membership=await supabaseClient.from("user_courses").delete().eq("user_id",currentUser.id).eq("course_id",dbid);
+       if(membership.error)throw membership.error;
+       state.myList=state.myList.filter(x=>String(x)!==String(courseId));
+       delete state.played[courseId];
+       state.orderRevision=(Number(state.orderRevision)||0)+1;
+       save();
+     }
+   }
    await loadCloudState();
    if(activeStateOwner!==String(currentUser.id))return;
    renderTop();renderMine();
    if(rowEl)rowEl.remove();
-   const remaining=count(courseId);
+   const remaining=remainingRows.length;
    if(remaining===0){document.getElementById("roundmodal").classList.remove("open");toast("Round deleted; course removed from My List");return}
    document.getElementById("roundModalSub").textContent=`${remaining} round${remaining===1?"":"s"} logged · Synced to your account`;
    toast("Round deleted");
@@ -1765,11 +1781,11 @@ async function loadFriendsDirectory(){
   if(!currentUser||!supabaseClient){sel.innerHTML='<option value="">Sign in to see friends…</option>';list.innerHTML='<div class="friends-empty">Sign in to see registered members and their lists.</div>';return}
   sel.disabled=true;list.innerHTML='<div class="friends-loading">Loading friends…</div>';
   try{
-    const {data,error}=await supabaseClient.from("profiles").select("id,email,display_name").order("email",{ascending:true});
+    const {data,error}=await supabaseClient.from("profiles").select("id,email,username,display_name").order("username",{ascending:true});
     if(error)throw error;
     friendsCache=(data||[]).filter(x=>String(x.id)!==String(currentUser.id));
     sel.innerHTML='<option value="">Select a friend…</option>';
-    friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.email||f.display_name||"Member";sel.appendChild(o)});
+    friendsCache.forEach(f=>{const o=document.createElement("option");o.value=f.id;o.textContent=f.username||f.display_name||f.email||"Member";sel.appendChild(o)});
     if(!friendsCache.length){list.innerHTML='<div class="friends-empty">No other registered members yet.</div>';return}
     list.innerHTML='<div class="friends-empty">Select a friend above to view their My List.</div>';
   }catch(e){
@@ -1784,7 +1800,7 @@ async function loadFriendList(friendId){
   const friend=friendsCache.find(x=>String(x.id)===String(friendId));
   if(!friend)return;
   list.innerHTML='<div class="friends-loading">Loading their My List…</div>';
-  label.textContent=`${friend.email||friend.display_name||"Friend"} · Personal ranking`;
+  label.textContent=`${friend.username||friend.display_name||friend.email||"Friend"} · Personal ranking`;
   try{
     const {data:rows,error}=await supabaseClient.from("user_courses").select("course_id,personal_rank,times_played").eq("user_id",friend.id).order("personal_rank",{ascending:true});
     if(error)throw error;
@@ -1816,13 +1832,58 @@ document.getElementById("friendSelect")?.addEventListener("change",e=>{selectedF
 
 <script>
 const authmodal=document.getElementById("authmodal");
-document.getElementById("authOpen").onclick=async()=>{if(currentUser){await supabaseClient.auth.signOut();return}authMode="signin";updateAuthUI();authmodal.classList.add("open");setTimeout(()=>document.getElementById("authEmail").focus(),80)};
+const authIdentity=document.getElementById("authIdentity");
+const authPassword=document.getElementById("authPassword");
+async function resolveLoginEmail(identifier){
+ const value=String(identifier||"").trim();
+ if(!value)return null;
+ if(value.includes("@"))return value;
+ if(!supabaseClient)return null;
+ const {data,error}=await supabaseClient.from("profiles").select("email").eq("username",value).limit(1);
+ if(error)throw error;
+ return data?.[0]?.email||null;
+}
+function usernameToInternalEmail(username){
+ return `${String(username).trim().toLowerCase()}@users.thecoursebook.app`;
+}
+document.getElementById("authOpen").onclick=async()=>{if(currentUser){await supabaseClient.auth.signOut();return}authMode="signin";updateAuthUI();authmodal.classList.add("open");setTimeout(()=>authIdentity.focus(),80)};
 document.getElementById("authClose").onclick=()=>authmodal.classList.remove("open");
 document.getElementById("authToggle").onclick=()=>{authMode=authMode==="signin"?"signup":"signin";updateAuthUI()};
-function updateAuthUI(){document.getElementById("authTitle").textContent=authMode==="signin"?"Sign in":"Create account";document.getElementById("authSubmit").textContent=authMode==="signin"?"Sign in":"Create account";document.getElementById("authToggle").textContent=authMode==="signin"?"Create account":"Back to sign in";document.getElementById("authError").textContent=""}
+function updateAuthUI(){
+ document.getElementById("authTitle").textContent=authMode==="signin"?"Sign in":"Create account";
+ document.getElementById("authSubmit").textContent=authMode==="signin"?"Sign in":"Create account";
+ document.getElementById("authToggle").textContent=authMode==="signin"?"Create account":"Back to sign in";
+ document.getElementById("authIdentityLabel").textContent=authMode==="signin"?"Username or email":"Username";
+ authIdentity.placeholder=authMode==="signin"?"your username":"Choose a username";
+ document.getElementById("authError").textContent="";
+}
 document.getElementById("authSubmit").onclick=async()=>{
- const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value; const err=document.getElementById("authError"); if(!email||password.length<6){err.textContent="Enter an email and a password of at least 6 characters.";return} err.textContent="";
- try{let result=authMode==="signin"?await supabaseClient.auth.signInWithPassword({email,password}):await supabaseClient.auth.signUp({email,password});if(result.error)throw result.error;if(authMode==="signup"&&!result.data.session){err.textContent="Account created. Check your email to confirm it, then sign in.";return}authmodal.classList.remove("open")}catch(e){err.textContent=e.message||"Unable to sign in."}
+ const identifier=authIdentity.value.trim(),password=authPassword.value; const err=document.getElementById("authError");
+ if(!identifier||password.length<6){err.textContent=authMode==="signup"?"Choose a username and a password of at least 6 characters.":"Enter your username/email and password.";return}
+ if(authMode==="signup"&&!/^[A-Za-z0-9_]{3,24}$/.test(identifier)){err.textContent="Username must be 3–24 characters using letters, numbers, or _.";return}
+ err.textContent="";
+ try{
+   let result;
+   let email;
+   if(authMode==="signup"){
+     const existing=await supabaseClient.from("profiles").select("id").eq("username",identifier).limit(1);
+     if(existing.error)throw existing.error;
+     if(existing.data?.length){err.textContent="That username is already taken.";return}
+     email=usernameToInternalEmail(identifier);
+     result=await supabaseClient.auth.signUp({email,password,options:{data:{username:identifier,display_name:identifier}}});
+   }else{
+     email=await resolveLoginEmail(identifier);
+     if(!email){err.textContent="Username not found. You can also sign in with your email.";return}
+     result=await supabaseClient.auth.signInWithPassword({email,password});
+   }
+   if(result.error)throw result.error;
+   if(authMode==="signup"&&!result.data.session){err.textContent="Account created, but Supabase is still requiring email confirmation. Turn off Confirm email in Supabase Auth settings for this prototype.";return}
+   if(authMode==="signup"&&result.data.user){
+     const prof=await supabaseClient.from("profiles").upsert({id:result.data.user.id,email:result.data.user.email||email,username:identifier,display_name:identifier},{onConflict:"id"});
+     if(prof.error)throw prof.error;
+   }
+   authIdentity.value="";authPassword.value="";authmodal.classList.remove("open");
+ }catch(e){err.textContent=e.message||"Unable to sign in."}
 };
 if(supabaseClient){
   let cloudHydratedUserId=null;
@@ -1852,7 +1913,7 @@ if(supabaseClient){
     cloudHydratedUserId=currentUser.id;
     try{
       await supabaseClient.from("profiles").upsert(
-        {id:currentUser.id,email:currentUser.email||"",display_name:(currentUser.email||"").split("@")[0]},
+        {id:currentUser.id,email:currentUser.email||"",username:currentUser.user_metadata?.username||((currentUser.email||"").split("@")[0]),display_name:currentUser.user_metadata?.username||((currentUser.email||"").split("@")[0])},
         {onConflict:"id"}
       );
       await migrateAndLoadCloud();
