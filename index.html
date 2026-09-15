@@ -553,7 +553,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T17:15:00-04:00";
-const APP_VERSION="v131";
+const APP_VERSION="v132";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1293,11 +1293,22 @@ function renderTop(){
      .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
      .sort((a,b)=>a._rankingRank-b._rankingRank);
  }else if(rankingType){
-   arr=cloudForType
-     .map(r=>({...r.course,_rankingRank:Number(r.rank)}))
-     .filter(c=>c?.name)
-     .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
-     .sort((a,b)=>a._rankingRank-b._rankingRank);
+   if(rankingType==="usa_public" && cloudRankingsLoaded && !cloudComplete){
+     // Supabase currently has an incomplete USA Public ranking set.
+     // Keep the complete published Top 100 bundled catalog as the fallback
+     // until the Supabase set contains all 100 ranked courses.
+     arr=courses.filter(c=>c.public)
+       .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
+       .sort((a,b)=>(a.public||999)-(b.public||999))
+       .slice(0,100)
+       .map(c=>({...c,_rankingRank:Number(c.public)}));
+   }else{
+     arr=cloudForType
+       .map(r=>({...r.course,_rankingRank:Number(r.rank)}))
+       .filter(c=>c?.name)
+       .filter(c=>c.name.toLowerCase().includes(q)||String(c.location||"").toLowerCase().includes(q))
+       .sort((a,b)=>a._rankingRank-b._rankingRank);
+   }
    if(!cloudRankingsLoaded){
      const box=document.getElementById("toplist");
      box.innerHTML='<div class="empty">Loading rankings…</div>';
