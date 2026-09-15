@@ -604,8 +604,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T08:22:02-04:00";
-const APP_VERSION="v96";
+const APP_BUILD_UPDATED_AT="2026-09-15T08:29:06-04:00";
+const APP_VERSION="v97";
 document.getElementById("refreshApp").onclick=()=>window.location.reload();
 
 function updateRefreshedDate(){
@@ -1461,11 +1461,28 @@ if(window.visualViewport){
 window.addEventListener("resize",syncVisibleViewport);
 syncVisibleViewport();
 let apiSearchSession=0;
+async function fetchOpenGolf(url){
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const res=await fetch(url,{cache:"no-store",headers:{"Accept":"application/json","X-Course-Book-Session":String(apiSearchSession)}});
+      if(res.ok)return res;
+      lastError=new Error(`OpenGolfAPI ${res.status}`);
+      if(![499,502,503,504].includes(res.status))throw lastError;
+      await new Promise(r=>setTimeout(r,250*(attempt+1)));
+    }catch(e){
+      lastError=e;
+      if(attempt===1)throw e;
+      await new Promise(r=>setTimeout(r,250*(attempt+1)));
+    }
+  }
+  throw lastError||new Error("OpenGolfAPI request failed");
+}
 function resetLogSearchConnection(){
   clearTimeout(remoteSearchTimer); remoteSearchTimer=null;
   // Start a fresh live-search session each time the Log a Round modal opens.
-  // Keep the 6-hour Michigan directory cache; clearing it forced a large
-  // directory request every time and could produce 499/client-disconnect errors.
+  // Every Log a Round session gets a fresh request token. Search uses live
+  // global and state-filtered OpenGolfAPI calls; there is no Michigan directory cache.
   apiSearchSession=Date.now();
   miDirectoryPromise=null;
 }
@@ -1501,8 +1518,6 @@ document.getElementById("backToSearch").onclick=()=>{selectedCourseId=null;docum
 document.getElementById("modalsearch").oninput=()=>{syncVisibleViewport();renderResults()};
 let remoteSearchTimer=null;
 let miDirectoryPromise=null;
-const MI_CACHE_KEY="coursebook.opengolf.mi.v1";
-const MI_CACHE_TTL=6*60*60*1000;
 
 function apiCourseToRaw(c){
   const displayName=String(c.name||c.course_name||c.title||"Unnamed Course").trim();
