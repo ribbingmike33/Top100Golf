@@ -568,6 +568,87 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   }
 }
 </style>
+
+<style id="v161-state-wrap-and-control-alignment">
+/* v161: allow long state labels to wrap and make the Show all/search controls exactly the same height. */
+.state-selector-row .top-state-select,
+.state-selector-row .mylist-state-select{
+  box-sizing:border-box !important;
+  width:155px !important;
+  max-width:155px !important;
+  min-width:155px !important;
+  min-height:50px !important;
+  height:50px !important;
+  padding:5px 30px 5px 12px !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  text-overflow:clip !important;
+  line-height:1.1 !important;
+}
+
+/* Long state names must be fully visible in the tab instead of ellipsizing. */
+.top100-controls #topseg button,
+.mine-controls .mylist-filter button{
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  line-height:1.05 !important;
+  min-height:50px !important;
+  height:50px !important;
+  padding:6px 4px !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+
+/* Keep Show all and Search perfectly level and the same height. */
+.top100-controls .top-controls-right{
+  align-items:stretch !important;
+}
+.top100-controls .top-mine-toggle,
+.top100-controls .top-controls-right .search{
+  box-sizing:border-box !important;
+  height:50px !important;
+  min-height:50px !important;
+  max-height:50px !important;
+  margin:0 !important;
+  align-self:stretch !important;
+}
+.top100-controls .top-mine-toggle{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+@media(max-width:760px){
+  .state-selector-row .top-state-select,
+  .state-selector-row .mylist-state-select{
+    width:155px !important;
+    max-width:155px !important;
+    min-width:155px !important;
+    height:50px !important;
+    min-height:50px !important;
+    font-size:13px !important;
+  }
+  .top100-controls #topseg button,
+  .mine-controls .mylist-filter button{
+    height:50px !important;
+    min-height:50px !important;
+    padding:6px 3px !important;
+    font-size:12px !important;
+  }
+  .top100-controls .top-mine-toggle,
+  .top100-controls .top-controls-right .search{
+    height:50px !important;
+    min-height:50px !important;
+    max-height:50px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
