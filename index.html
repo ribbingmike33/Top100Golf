@@ -696,6 +696,72 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   }
 }
 </style>
+
+<style id="v163-equal-tab-sizing-and-font">
+/* v163: make every Top 100 and My List tab exactly equal in width/height and use one smaller shared font size so Massachusetts fits. */
+.top100-controls #topseg,
+.mine-controls .mylist-filter{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  gap:4px !important;
+  overflow:visible !important;
+}
+.top100-controls #topseg button,
+.mine-controls .mylist-filter button{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:50px !important;
+  min-height:50px !important;
+  max-height:50px !important;
+  box-sizing:border-box !important;
+  padding:4px 2px !important;
+  margin:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  font-size:10px !important;
+  line-height:1.05 !important;
+  font-weight:700 !important;
+  letter-spacing:0 !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+}
+#stateTopTabLabel,
+#stateMyListTabLabel{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  text-align:center !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  line-height:1.05 !important;
+}
+@media(max-width:760px){
+  .top100-controls #topseg,
+  .mine-controls .mylist-filter{
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:4px !important;
+  }
+  .top100-controls #topseg button,
+  .mine-controls .mylist-filter button{
+    width:100% !important;
+    height:50px !important;
+    min-height:50px !important;
+    max-height:50px !important;
+    padding:4px 2px !important;
+    font-size:10px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1061,7 +1127,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-15T21:20:00-04:00";
-const APP_VERSION="v159";
+const APP_VERSION="v163";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
