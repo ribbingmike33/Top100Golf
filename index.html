@@ -1172,7 +1172,7 @@ let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
 const APP_BUILD_UPDATED_AT="2026-09-16T00:45:00-04:00";
-const APP_VERSION="v173";
+const APP_VERSION="v174";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -3169,6 +3169,17 @@ const authmodal=document.getElementById("authmodal");
 const authIdentity=document.getElementById("authIdentity");
 const authEmail=document.getElementById("authEmail");
 const authPassword=document.getElementById("authPassword");
+const PENDING_AUTH_EMAIL_KEY="theCourseBookPendingAuthEmail";
+function getPendingAuthEmail(){
+ try{return String(localStorage.getItem(PENDING_AUTH_EMAIL_KEY)||"").trim()}catch(_){return ""}
+}
+function setPendingAuthEmail(value){
+ try{
+  const v=String(value||"").trim();
+  if(v)localStorage.setItem(PENDING_AUTH_EMAIL_KEY,v);
+  else localStorage.removeItem(PENDING_AUTH_EMAIL_KEY);
+ }catch(_){}
+}
 async function resolveLoginEmail(identifier){
  const value=String(identifier||"").trim();
  if(!value)return null;
@@ -3188,6 +3199,10 @@ function updateAuthUI(){
  document.getElementById("authToggle").textContent=signup?"Back to sign in":"Create account";
  document.getElementById("authIdentityLabel").textContent=signup?"Username":"Email";
  authIdentity.placeholder=signup?"Choose a username":"you@example.com";
+ if(!signup){
+  const pendingEmail=getPendingAuthEmail();
+  if(pendingEmail)authIdentity.value=pendingEmail;
+ }
  document.getElementById("authEmailGroup").style.display=signup?"block":"none";
  authEmail.required=signup;
  authPassword.autocomplete=signup?"new-password":"current-password";
@@ -3216,8 +3231,9 @@ document.getElementById("authSubmit").onclick=async()=>{
      if(existing.error)throw existing.error;
      if(existing.data?.length){err.textContent="That username is already taken.";return}
      result=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:AUTH_REDIRECT_URL,data:{username,display_name:username}}});
+     if(!result.error)setPendingAuthEmail(email);
    }else{
-     loginEmail=username;
+     loginEmail=email;
      result=await supabaseClient.auth.signInWithPassword({email:loginEmail,password});
    }
    if(result.error)throw result.error;
@@ -3229,6 +3245,7 @@ document.getElementById("authSubmit").onclick=async()=>{
      const prof=await supabaseClient.from("profiles").upsert({id:result.data.user.id,email:result.data.user.email||email,username,display_name:username},{onConflict:"id"});
      if(prof.error)throw prof.error;
    }
+   if(authMode==="signin")setPendingAuthEmail(loginEmail);
    authIdentity.value="";authEmail.value="";authPassword.value="";authmodal.classList.remove("open");
  }catch(e){err.textContent=e.message||"Unable to create account."}
 };
