@@ -762,6 +762,44 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   }
 }
 </style>
+
+<style id="v164-show-mine-mobile-height-fix">
+/* v164: Show mine must match the visible search field height on mobile Chrome/iOS Chrome. */
+.top100-controls .top-mine-toggle,
+.top100-controls .top-controls-right .search{
+  box-sizing:border-box !important;
+  height:43px !important;
+  min-height:43px !important;
+  max-height:43px !important;
+  align-self:start !important;
+  margin:0 !important;
+}
+.top100-controls .top-controls-right .search input{
+  box-sizing:border-box !important;
+  height:43px !important;
+  min-height:43px !important;
+  max-height:43px !important;
+}
+.top100-controls .top-mine-toggle{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+@media(max-width:760px){
+  .top100-controls .top-mine-toggle,
+  .top100-controls .top-controls-right .search{
+    height:43px !important;
+    min-height:43px !important;
+    max-height:43px !important;
+    align-self:start !important;
+  }
+  .top100-controls .top-controls-right .search input{
+    height:43px !important;
+    min-height:43px !important;
+    max-height:43px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1126,8 +1164,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T21:20:00-04:00";
-const APP_VERSION="v163";
+const APP_BUILD_UPDATED_AT="2026-09-15T22:27:00-04:00";
+const APP_VERSION="v164";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
