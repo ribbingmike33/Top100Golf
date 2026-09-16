@@ -398,6 +398,78 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   }
 }
 </style>
+
+<style id="state-top-controls-final-fix">
+/* Final isolated fix: equal Top 100 tabs and compact controls. */
+.top100-controls #topseg{
+  width:100% !important;
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:5px !important;
+  overflow:hidden !important;
+}
+.top100-controls #topseg button{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:48px !important;
+  padding:10px 6px !important;
+  flex:none !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.state-selector-row .top-state-select{
+  box-sizing:border-box !important;
+  width:190px !important;
+  max-width:190px !important;
+  height:48px !important;
+}
+.top100-controls .top-controls-right{
+  display:grid !important;
+  grid-template-columns:140px minmax(0,1fr) !important;
+  gap:8px !important;
+  width:100% !important;
+}
+.top100-controls .top-mine-toggle{
+  width:140px !important;
+  min-width:140px !important;
+  min-height:48px !important;
+  padding:0 10px !important;
+  font-size:12px !important;
+}
+.top100-controls .top-controls-right .search{
+  width:100% !important;
+  min-width:0 !important;
+}
+@media(max-width:760px){
+  .top100-controls #topseg{
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:4px !important;
+  }
+  .top100-controls #topseg button{
+    min-height:50px !important;
+    padding:10px 4px !important;
+    font-size:12px !important;
+  }
+  .state-selector-row .top-state-select{
+    box-sizing:border-box !important;
+    width:190px !important;
+    max-width:190px !important;
+    height:48px !important;
+    font-size:13px !important;
+  }
+  .top100-controls .top-controls-right{
+    grid-template-columns:140px minmax(0,1fr) !important;
+    gap:8px !important;
+  }
+  .top100-controls .top-mine-toggle{
+    width:140px !important;
+    min-width:140px !important;
+    min-height:50px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -1912,7 +1984,6 @@ if(topSeg)topSeg.addEventListener("click",e=>{
   if(!b||!topSeg.contains(b))return;
   e.preventDefault();
   filter=String(b.dataset.f||"state");
-  rankingMetadataRun++;
   document.querySelectorAll("#topseg button").forEach(x=>x.classList.toggle("active",x===b));
   syncTopFilterUI();
   const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();
@@ -1925,17 +1996,10 @@ const handleStateSelection=e=>{
   const code=String(e.target.value||"").toUpperCase();
   selectedStateCode=code;
   try{localStorage.setItem("theCourseBookSelectedState",selectedStateCode)}catch(_){}
-  // Selecting a state prepares the State tab's data/label only. It does not
-  // switch away from the tab currently being viewed. The State tab is the
-  // explicit switch that displays the selected state's rankings.
-  rankingMetadataRun++;
+  // Update both State tab labels immediately, but do NOT change the list
+  // currently being viewed. The user must click the State tab to apply the
+  // newly selected state to the visible list.
   syncTopFilterUI();
-  const q=document.getElementById("topsearch");q.value="";q.blur();exitMobileSearch();
-  renderTop();
-  renderMine();
-  if(supabaseClient && !cloudRankingsLoaded){
-    loadCloudRankings().then(()=>{renderTop();renderMine();});
-  }
 };
 document.getElementById("topStateRankSelect")?.addEventListener("change",handleStateSelection);
 document.getElementById("myListStateSelect")?.addEventListener("change",handleStateSelection);
