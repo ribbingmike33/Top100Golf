@@ -3209,12 +3209,13 @@ document.getElementById("authSubmit").onclick=async()=>{
  err.textContent="";
  try{
    let result;
+   const AUTH_REDIRECT_URL="https://ribbingmike33.github.io/Top100Golf/";
    let loginEmail=email;
    if(authMode==="signup"){
      const existing=await supabaseClient.from("profiles").select("id").eq("username",username).limit(1);
      if(existing.error)throw existing.error;
      if(existing.data?.length){err.textContent="That username is already taken.";return}
-     result=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:"https://ribbingmike33.github.io/Top100Golf/",data:{username,display_name:username}}});
+     result=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:AUTH_REDIRECT_URL,data:{username,display_name:username}}});
    }else{
      loginEmail=username;
      result=await supabaseClient.auth.signInWithPassword({email:loginEmail,password});
@@ -3295,6 +3296,8 @@ if(supabaseClient){
     }
   }
 
+  // Supabase processes confirmation links on the fixed GitHub Pages URL.
+  // Keep the URL handling enabled so the confirmation session can be restored.
   supabaseClient.auth.onAuthStateChange((_event,session)=>{
     setTimeout(()=>hydrateSignedInUser(session),0);
   });
