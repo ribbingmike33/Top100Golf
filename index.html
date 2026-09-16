@@ -521,6 +521,53 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 }
 </style>
 
+
+<style id="v160-state-selector-and-tab-wrap-fix">
+/* v160: compact shared state selector and allow long state tab labels to wrap. */
+.state-selector-row .top-state-select,
+.state-selector-row .mylist-state-select{
+  box-sizing:border-box !important;
+  width:145px !important;
+  max-width:145px !important;
+  height:42px !important;
+  min-height:42px !important;
+  padding:0 34px 0 13px !important;
+  font-size:13px !important;
+  border-radius:11px !important;
+}
+.top100-controls #topseg button,
+.mine-controls .mylist-filter button{
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  overflow-wrap:normal !important;
+  word-break:normal !important;
+  line-height:1.1 !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:50px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+}
+@media(max-width:760px){
+  .state-selector-row .top-state-select,
+  .state-selector-row .mylist-state-select{
+    width:145px !important;
+    max-width:145px !important;
+    height:42px !important;
+    min-height:42px !important;
+    font-size:13px !important;
+  }
+  .top100-controls #topseg button,
+  .mine-controls .mylist-filter button{
+    min-height:50px !important;
+    padding:8px 4px !important;
+    font-size:12px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="app">
