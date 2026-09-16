@@ -800,6 +800,12 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
   }
 }
 </style>
+
+<style id="v165-account-form-mobile">
+@media(max-width:760px){
+  .authmodal input{font-size:16px !important;}
+}
+</style>
 </head>
 <body>
 <div class="app">
@@ -886,6 +892,7 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 <div class="modalhead"><div><div class="eyebrow">Your account</div><h3 id="authTitle">Sign in</h3></div><button class="modalclose" id="authClose" aria-label="Close">×</button></div>
 <div class="sub" id="authSub">Sign in to keep your courses, rankings and rounds synced to your account.</div>
 <div class="group"><label id="authIdentityLabel">Username</label><input id="authIdentity" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="your username"></div>
+<div class="group" id="authEmailGroup" style="display:none"><label>Email</label><input id="authEmail" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com"></div>
 <div class="group"><label>Password</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="••••••••"></div>
 <div class="autherror" id="authError"></div>
 <div class="actions"><button class="secondary" id="authToggle">Create account</button><button class="primary" id="authSubmit">Sign in</button></div>
@@ -1164,8 +1171,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T22:27:00-04:00";
-const APP_VERSION="v164";
+const APP_BUILD_UPDATED_AT="2026-09-15T23:59:00-04:00";
+const APP_VERSION="v165";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -3160,6 +3167,7 @@ document.getElementById("friendSelect")?.addEventListener("change",e=>{selectedF
 <script>
 const authmodal=document.getElementById("authmodal");
 const authIdentity=document.getElementById("authIdentity");
+const authEmail=document.getElementById("authEmail");
 const authPassword=document.getElementById("authPassword");
 async function resolveLoginEmail(identifier){
  const value=String(identifier||"").trim();
@@ -3170,47 +3178,58 @@ async function resolveLoginEmail(identifier){
  if(error)throw error;
  return data?.[0]?.email||null;
 }
-function usernameToInternalEmail(username){
- return `${String(username).trim().toLowerCase()}@users.thecoursebook.app`;
-}
 document.getElementById("authOpen").onclick=async()=>{if(currentUser){await supabaseClient.auth.signOut();return}authMode="signin";updateAuthUI();authmodal.classList.add("open");setTimeout(()=>authIdentity.focus(),80)};
 document.getElementById("authClose").onclick=()=>authmodal.classList.remove("open");
 document.getElementById("authToggle").onclick=()=>{authMode=authMode==="signin"?"signup":"signin";updateAuthUI()};
 function updateAuthUI(){
- document.getElementById("authTitle").textContent=authMode==="signin"?"Sign in":"Create account";
- document.getElementById("authSubmit").textContent=authMode==="signin"?"Sign in":"Create account";
- document.getElementById("authToggle").textContent=authMode==="signin"?"Create account":"Back to sign in";
- document.getElementById("authIdentityLabel").textContent=authMode==="signin"?"Username or email":"Username";
- authIdentity.placeholder=authMode==="signin"?"your username":"Choose a username";
+ const signup=authMode==="signup";
+ document.getElementById("authTitle").textContent=signup?"Create account":"Sign in";
+ document.getElementById("authSubmit").textContent=signup?"Save":"Sign in";
+ document.getElementById("authToggle").textContent=signup?"Back to sign in":"Create account";
+ document.getElementById("authIdentityLabel").textContent=signup?"Username":"Username or email";
+ authIdentity.placeholder=signup?"Choose a username":"your username or email";
+ document.getElementById("authEmailGroup").style.display=signup?"block":"none";
+ authEmail.required=signup;
+ authPassword.autocomplete=signup?"new-password":"current-password";
  document.getElementById("authError").textContent="";
 }
 document.getElementById("authSubmit").onclick=async()=>{
- const identifier=authIdentity.value.trim(),password=authPassword.value; const err=document.getElementById("authError");
- if(!identifier||password.length<6){err.textContent=authMode==="signup"?"Choose a username and a password of at least 6 characters.":"Enter your username/email and password.";return}
- if(authMode==="signup"&&!/^[A-Za-z0-9_]{3,24}$/.test(identifier)){err.textContent="Username must be 3–24 characters using letters, numbers, or _.";return}
+ const username=authIdentity.value.trim(), email=authEmail.value.trim(), password=authPassword.value;
+ const err=document.getElementById("authError");
+ if(authMode==="signup"){
+   if(!username||!email||!password){err.textContent="Enter a username, email, and password.";return}
+   if(password.length<6){err.textContent="Password must be at least 6 characters.";return}
+   if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){err.textContent="Username must be 3–24 characters using letters, numbers, or _.";return}
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent="Enter a valid email address.";return}
+ }else{
+   if(!username||!password){err.textContent="Enter your username/email and password.";return}
+   if(password.length<6){err.textContent="Password must be at least 6 characters.";return}
+ }
  err.textContent="";
  try{
    let result;
-   let email;
+   let loginEmail=email;
    if(authMode==="signup"){
-     const existing=await supabaseClient.from("profiles").select("id").eq("username",identifier).limit(1);
+     const existing=await supabaseClient.from("profiles").select("id").eq("username",username).limit(1);
      if(existing.error)throw existing.error;
      if(existing.data?.length){err.textContent="That username is already taken.";return}
-     email=usernameToInternalEmail(identifier);
-     result=await supabaseClient.auth.signUp({email,password,options:{data:{username:identifier,display_name:identifier}}});
+     result=await supabaseClient.auth.signUp({email,password,options:{data:{username,display_name:username}}});
    }else{
-     email=await resolveLoginEmail(identifier);
-     if(!email){err.textContent="Username not found. You can also sign in with your email.";return}
-     result=await supabaseClient.auth.signInWithPassword({email,password});
+     loginEmail=await resolveLoginEmail(username);
+     if(!loginEmail){err.textContent="Username not found. You can also sign in with your email.";return}
+     result=await supabaseClient.auth.signInWithPassword({email:loginEmail,password});
    }
    if(result.error)throw result.error;
-   if(authMode==="signup"&&!result.data.session){err.textContent="Account created, but Supabase is still requiring email confirmation. Turn off Confirm email in Supabase Auth settings for this prototype.";return}
+   if(authMode==="signup"&&!result.data.session){
+     err.textContent="Account created. Check your email to confirm your account, then sign in.";
+     return;
+   }
    if(authMode==="signup"&&result.data.user){
-     const prof=await supabaseClient.from("profiles").upsert({id:result.data.user.id,email:result.data.user.email||email,username:identifier,display_name:identifier},{onConflict:"id"});
+     const prof=await supabaseClient.from("profiles").upsert({id:result.data.user.id,email:result.data.user.email||email,username,display_name:username},{onConflict:"id"});
      if(prof.error)throw prof.error;
    }
-   authIdentity.value="";authPassword.value="";authmodal.classList.remove("open");
- }catch(e){err.textContent=e.message||"Unable to sign in."}
+   authIdentity.value="";authEmail.value="";authPassword.value="";authmodal.classList.remove("open");
+ }catch(e){err.textContent=e.message||"Unable to create account."}
 };
 if(supabaseClient){
   let cloudHydratedUserId=null;
