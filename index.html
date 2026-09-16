@@ -470,6 +470,56 @@ main{max-width:1160px;margin:auto;padding:34px 24px 80px}.page{display:none}.pag
 }
 </style>
 
+<style id="v156-show-mine-final">
+/* v156: keep Show mine compact and aligned with the search field. */
+.top100-controls .top-controls-right{
+  display:grid !important;
+  grid-template-columns:140px minmax(0,1fr) !important;
+  align-items:stretch !important;
+  gap:8px !important;
+  width:100% !important;
+}
+.top100-controls .top-mine-toggle{
+  display:block !important;
+  box-sizing:border-box !important;
+  width:140px !important;
+  min-width:140px !important;
+  max-width:140px !important;
+  height:48px !important;
+  min-height:48px !important;
+  max-height:48px !important;
+  margin:0 !important;
+  padding:0 10px !important;
+}
+.top100-controls .top-controls-right .search{
+  box-sizing:border-box !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:48px !important;
+  min-height:48px !important;
+  max-height:48px !important;
+  margin:0 !important;
+}
+@media(max-width:760px){
+  .top100-controls .top-controls-right{
+    grid-template-columns:140px minmax(0,1fr) !important;
+  }
+  .top100-controls .top-mine-toggle{
+    width:140px !important;
+    min-width:140px !important;
+    max-width:140px !important;
+    height:50px !important;
+    min-height:50px !important;
+    max-height:50px !important;
+  }
+  .top100-controls .top-controls-right .search{
+    height:50px !important;
+    min-height:50px !important;
+    max-height:50px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div class="app">
@@ -834,8 +884,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T21:00:00-04:00";
-const APP_VERSION="v155";
+const APP_BUILD_UPDATED_AT="2026-09-15T21:30:00-04:00";
+const APP_VERSION="v156";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1117,8 +1167,28 @@ async function loadCloudState(){
     const localMatches=existingLocalIds.map(id=>get(id)).filter(Boolean).filter(c=>norm(c.name)===norm(db.name||""));
     if(localMatches.length===1){
       const local=localMatches[0];
-      // Existing local course records are authoritative. Cloud hydration must
-      // never rewrite their metadata.
+
+      // Preserve the Course Book identity, ranking, and canonical overrides, but
+      // refresh location metadata from the shared courses row. Location/state is
+      // shared course data, not personal-list data, so an older local cache must
+      // not keep displaying "USA" after the database has been corrected.
+      const canonical=canonicalCourseLocations.get(norm(db.name||""));
+      if(canonical){
+        local.location=canonical;
+        local.country=courseCountryFromLocation(canonical,"");
+        const parts=canonical.split(",").map(x=>x.trim()).filter(Boolean);
+        local.city=parts[0]||local.city||"";
+        local.state="";
+      }else{
+        const dbLoc=[db.city,db.state,db.country].filter(Boolean).join(", ");
+        if(dbLoc){
+          local.location=dbLoc;
+          local.city=db.city||"";
+          local.state=db.state||"";
+          local.country=db.country||"";
+          local.region=String(db.country||"").toUpperCase()==="USA"?"custom":"international";
+        }
+      }
       cloudCourseMap.set(String(local.id),String(db.id));
       return local;
     }
