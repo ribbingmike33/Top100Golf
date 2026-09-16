@@ -834,8 +834,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T20:25:00-04:00";
-const APP_VERSION="v148";
+const APP_BUILD_UPDATED_AT="2026-09-15T21:00:00-04:00";
+const APP_VERSION="v155";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -1996,10 +1996,17 @@ const handleStateSelection=e=>{
   const code=String(e.target.value||"").toUpperCase();
   selectedStateCode=code;
   try{localStorage.setItem("theCourseBookSelectedState",selectedStateCode)}catch(_){}
-  // Update both State tab labels immediately, but do NOT change the list
-  // currently being viewed. The user must click the State tab to apply the
-  // newly selected state to the visible list.
   syncTopFilterUI();
+
+  // If the user is already viewing a State tab, apply the newly selected
+  // state immediately. If they are viewing another tab, only update the
+  // shared selector/label and leave that tab's content unchanged.
+  if(e.target?.id==="topStateRankSelect" && filter==="state"){
+    renderTop();
+  }
+  if(e.target?.id==="myListStateSelect" && myListFilter==="state"){
+    renderMine();
+  }
 };
 document.getElementById("topStateRankSelect")?.addEventListener("change",handleStateSelection);
 document.getElementById("myListStateSelect")?.addEventListener("change",handleStateSelection);
@@ -2775,11 +2782,30 @@ async function migrateAndLoadCloud(){
 // progressively afterward.
 
 /* Default the shared state selection from the device location on first use.
-   A saved/manual state always wins, so location never overrides the user's choice. */
+   This version intentionally resets the old location-selection flag once so an
+   existing user gets one fresh browser location request. After that, the
+   detected state is stored and reused on subsequent loads. */
+const LOCATION_PROMPT_VERSION="v2";
+const LOCATION_PROMPT_KEY="theCourseBookLocationPromptVersion";
+
 async function defaultStateFromLocation(){
-  let saved="";
-  try{saved=String(localStorage.getItem("theCourseBookSelectedState")||"").toUpperCase()}catch(_){}
-  if(saved)return;
+  let promptVersion="";
+  try{promptVersion=String(localStorage.getItem(LOCATION_PROMPT_KEY)||"")}catch(_){}
+
+  // One-time reset for the new location flow. This removes the previous saved
+  // state only once, so the browser gets a fresh opportunity to determine it.
+  if(promptVersion!==LOCATION_PROMPT_VERSION){
+    try{
+      localStorage.removeItem("theCourseBookSelectedState");
+      localStorage.setItem(LOCATION_PROMPT_KEY,LOCATION_PROMPT_VERSION);
+    }catch(_){}
+    selectedStateCode="";
+    syncTopFilterUI();
+  }else{
+    let saved="";
+    try{saved=String(localStorage.getItem("theCourseBookSelectedState")||"").toUpperCase()}catch(_){}
+    if(saved)return;
+  }
 
   if(!("geolocation" in navigator))return;
 
@@ -2788,7 +2814,7 @@ async function defaultStateFromLocation(){
       navigator.geolocation.getCurrentPosition(
         resolve,
         reject,
-        {enableHighAccuracy:false,maximumAge:86400000,timeout:10000}
+        {enableHighAccuracy:false,maximumAge:0,timeout:10000}
       );
     });
 
@@ -2837,8 +2863,9 @@ async function defaultStateFromLocation(){
       });
     }
   }catch(_){
-    // Location permission denied, unavailable, or reverse geocoding failed:
-    // leave the selector at "Select a state…" and let the user choose manually.
+    // Permission denied, unavailable, or reverse geocoding failed. The
+    // one-time prompt flag remains set, so a successful saved state is not
+    // unexpectedly replaced on later loads.
   }
 }
 
