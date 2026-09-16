@@ -1171,8 +1171,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-16T00:30:00-04:00";
-const APP_VERSION="v167";
+const APP_BUILD_UPDATED_AT="2026-09-16T00:45:00-04:00";
+const APP_VERSION="v170";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -3186,8 +3186,8 @@ function updateAuthUI(){
  document.getElementById("authTitle").textContent=signup?"Create account":"Sign in";
  document.getElementById("authSubmit").textContent=signup?"Save":"Sign in";
  document.getElementById("authToggle").textContent=signup?"Back to sign in":"Create account";
- document.getElementById("authIdentityLabel").textContent=signup?"Username":"Username or email";
- authIdentity.placeholder=signup?"Choose a username":"your username or email";
+ document.getElementById("authIdentityLabel").textContent=signup?"Username":"Email";
+ authIdentity.placeholder=signup?"Choose a username":"you@example.com";
  document.getElementById("authEmailGroup").style.display=signup?"block":"none";
  authEmail.required=signup;
  authPassword.autocomplete=signup?"new-password":"current-password";
@@ -3213,7 +3213,7 @@ document.getElementById("authSubmit").onclick=async()=>{
      const existing=await supabaseClient.from("profiles").select("id").eq("username",username).limit(1);
      if(existing.error)throw existing.error;
      if(existing.data?.length){err.textContent="That username is already taken.";return}
-     result=await supabaseClient.auth.signUp({email,password,options:{data:{username,display_name:username}}});
+     result=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:"https://ribbingmike33.github.io/Top100Golf/",data:{username,display_name:username}}});
    }else{
      loginEmail=await resolveLoginEmail(username);
      if(!loginEmail){err.textContent="Username not found. You can also sign in with your email.";return}
