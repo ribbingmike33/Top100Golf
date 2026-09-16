@@ -1171,8 +1171,8 @@ function rememberApiMapping(apiId,canonicalId){
 let currentUser=null, authMode="signin", syncing=false;
 // Build timestamp: intentionally fixed in the HTML so it changes only when a new
 // app file is generated. A manual browser/app refresh must NOT change this.
-const APP_BUILD_UPDATED_AT="2026-09-15T23:59:00-04:00";
-const APP_VERSION="v165";
+const APP_BUILD_UPDATED_AT="2026-09-16T00:30:00-04:00";
+const APP_VERSION="v167";
 
 // Ranking metadata cache is separate from user state. It enriches static ranking
 // entries with authoritative OpenGolfAPI city/state data without changing the
@@ -3180,7 +3180,7 @@ async function resolveLoginEmail(identifier){
 }
 document.getElementById("authOpen").onclick=async()=>{if(currentUser){await supabaseClient.auth.signOut();return}authMode="signin";updateAuthUI();authmodal.classList.add("open");setTimeout(()=>authIdentity.focus(),80)};
 document.getElementById("authClose").onclick=()=>authmodal.classList.remove("open");
-document.getElementById("authToggle").onclick=()=>{authMode=authMode==="signin"?"signup":"signin";updateAuthUI()};
+document.getElementById("authToggle").onclick=()=>{if(authMode==="signin"){const typed=authIdentity.value.trim();if(typed.includes("@"))authEmail.value=typed;authIdentity.value="";}authMode=authMode==="signin"?"signup":"signin";updateAuthUI()};
 function updateAuthUI(){
  const signup=authMode==="signup";
  document.getElementById("authTitle").textContent=signup?"Create account":"Sign in";
